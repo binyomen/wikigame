@@ -35,6 +35,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -W
+    - -Wunused-binds
     - -Werror
     dependencies:
     - wikigame
@@ -48,6 +49,7 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     - -W
+    - -Wunused-binds
     - -Werror
     dependencies:
     - wikigame
