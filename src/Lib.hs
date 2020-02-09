@@ -1,6 +1,6 @@
 module Lib
-    ( someFunc
+    ( playGame
     ) where
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+playGame :: String -> String -> IO ()
+playGame startUrl endUrl = putStrLn $ startUrl ++ " " ++ endUrl
