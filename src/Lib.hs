@@ -3,14 +3,16 @@ module Lib
     ) where
 
 import Crawler (Crawler, makeCrawler, nextPage)
-import Data.Maybe (fromMaybe)
 import RandomCrawler (RandomCrawler, makeCrawler, nextPage)
 import Page (title, url, sourceLinkText)
 
+import Data.Maybe (fromMaybe)
 import Text.HTML.Scalpel (URL)
+import System.IO (hSetEncoding, stdout, utf8)
 
 playGame :: URL -> URL -> IO ()
-playGame startUrl endUrl =
+playGame startUrl endUrl = do
+    hSetEncoding stdout utf8
     gameLoop crawler startUrl endUrl
     where
         crawler :: RandomCrawler
