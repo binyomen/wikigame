@@ -1,53 +1,60 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Page
-    ( title
-    , scrapePage
+    ( Page(..)
+    , fullUrl
+    , scrapeTitle
+    , scrapeLinks
+    , convertMaybe
     ) where
 
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, stripPrefix)
+import Data.Maybe (fromJust)
 import Text.HTML.Scalpel
     ( Scraper
     , URL
     , scrapeURL
-    , chroot
-    , attrs
+    , anySelector
+    , chroots
+    , attr
     , match
     , text
+    , (//)
     , (@:)
     , (@=)
     )
 
 data Page = Page
     { title :: String
-    , links :: [URL]
+    , url :: URL
+    , sourceLinkText :: Maybe String
     }
 
-testing :: String
-testing = "a"
-
-scrapePage :: URL -> IO Page
-scrapePage url =
-    scrapeURL url scraper >>= convertMaybe url
-    where
-        scraper = do
-            title <- scrapeTitle
-            links <- scrapeLinks
-            return $ Page {title = title, links = links}
+fullUrl :: URL -> URL
+fullUrl url = "https://en.wikipedia.org/wiki/" ++ url
 
 scrapeTitle :: Scraper String String
 scrapeTitle = text $ "h1" @: ["id" @= "firstHeading"]
 
-scrapeLinks :: Scraper String [String]
+scrapeLinks :: Scraper String [(String, URL)]
 scrapeLinks =
-    chroot ("div" @: ["id" @= "mw-content-text"]) linkScraper
+    chroots
+        (("div" @: ["id" @= "mw-content-text"]) // ("a" @: [match isWikipediaLink]))
+        linkScraper
     where
-        linkScraper = attrs "href" $ "a" @: [match isWikipediaLink]
+        linkScraper :: Scraper String (String, URL)
+        linkScraper = do
+            linkText <- text anySelector
+            linkUrl <- attr "href" anySelector
+            return (linkText, (fromJust $ stripPrefix "/wiki/" linkUrl))
 
 isWikipediaLink :: String -> String -> Bool
 isWikipediaLink key value =
     case key of
-        "href" -> "/wiki/" `isPrefixOf` value
+        "href" ->
+            "/wiki/" `isPrefixOf` value &&
+            not (elem ':' value) &&
+            not (elem '#' value)
         _ -> False
 
 convertMaybe :: URL -> Maybe a -> IO a
