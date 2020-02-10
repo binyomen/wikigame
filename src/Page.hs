@@ -46,15 +46,15 @@ scrapeLinks =
         linkScraper = do
             linkText <- text anySelector
             linkUrl <- attr "href" anySelector
-            return (linkText, (fromJust $ stripPrefix "/wiki/" linkUrl))
+            return (linkText, fromJust $ stripPrefix "/wiki/" linkUrl)
 
 isWikipediaLink :: String -> String -> Bool
 isWikipediaLink key value =
     case key of
         "href" ->
             "/wiki/" `isPrefixOf` value &&
-            not (elem ':' value) &&
-            not (elem '#' value)
+            notElem ':' value &&
+            notElem '#' value
         _ -> False
 
 convertMaybe :: URL -> Maybe a -> IO a
