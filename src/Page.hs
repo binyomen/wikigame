@@ -13,7 +13,6 @@ import Data.Maybe (fromJust)
 import Text.HTML.Scalpel
     ( Scraper
     , URL
-    , scrapeURL
     , anySelector
     , chroots
     , attr
@@ -25,9 +24,9 @@ import Text.HTML.Scalpel
     )
 
 data Page = Page
-    { title :: String
-    , url :: URL
-    , sourceLinkText :: Maybe String
+    { p_title :: String
+    , p_url :: URL
+    , p_sourceLinkText :: Maybe String
     }
 
 fullUrl :: URL -> URL

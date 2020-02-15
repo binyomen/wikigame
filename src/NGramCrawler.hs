@@ -5,23 +5,23 @@ module NGramCrawler
     ) where
 
 import Crawler (Crawler, makeCrawler, nextPage)
-import NGramModel (NGramModel, makeModel)
-import Page (Page(..), fullUrl, scrapeTitle, scrapeLinks, convertMaybe)
+import NGramModel ()
+import Page (Page(..))
 
-import Text.HTML.Scalpel (URL, scrapeURL)
+import Text.HTML.Scalpel (URL)
 
 data PageData = PageData
-    { page :: Page
-    , links :: [(String, URL)]
+    { pd_page :: Page
+    , pd_links :: [(String, URL)]
     }
 
 data NGramCrawler = NGramCrawler
-    { startUrl :: URL
-    , pageData :: Maybe PageData
+    { ngc_startUrl :: URL
+    , ngc_pageData :: Maybe PageData
     }
 
 instance Crawler NGramCrawler where
-    makeCrawler startUrl = NGramCrawler { startUrl = startUrl, pageData = Nothing }
+    makeCrawler startUrl = NGramCrawler { ngc_startUrl = startUrl, ngc_pageData = Nothing }
 
     nextPage crawler =
-        return (crawler, Page { title = "title", url = "url", sourceLinkText = Nothing })
+        return (crawler, Page { p_title = "title", p_url = "url", p_sourceLinkText = Nothing })
