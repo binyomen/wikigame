@@ -25,11 +25,12 @@ dependencies:
 - random
 - scalpel
 
+ghc-options:
+- -Wall
+- -Werror
+
 library:
   source-dirs: src
-  ghc-options:
-  - -Wall
-  - -Werror
 
 executables:
   wikigame-exe:
@@ -39,8 +40,6 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    - -Wall
-    - -Werror
     dependencies:
     - wikigame
 
@@ -52,7 +51,5 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    - -Wall
-    - -Werror
     dependencies:
     - wikigame
