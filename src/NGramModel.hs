@@ -10,13 +10,13 @@ data WordMap =
     Word String
 
 data NGramModel = NGramModel
-    { n :: Int
-    , dat :: WordMap
+    { ngm_n :: Int
+    , ngm_data :: WordMap
     }
 
 makeModel :: Int -> String -> NGramModel
 makeModel n text =
-    NGramModel { n = n, dat = parseText text }
+    NGramModel { ngm_n = n, ngm_data = parseText text }
 
 parseText :: String -> WordMap
 parseText text =
