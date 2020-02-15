@@ -3,7 +3,7 @@ module NGramModel
     , makeModel
     ) where
 
-import Data.Map (Map)
+import Data.Map.Strict (Map)
 
 data WordMap =
     WordMap (Map String WordMap) |
