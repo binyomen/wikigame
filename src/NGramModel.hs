@@ -6,9 +6,13 @@ module NGramModel
 import Data.Char (isSpace)
 import Data.Map.Strict (Map)
 
+data TextWord =
+    TextStart |
+    Literal String
+
 data WordMap =
-    WordMap (Map String WordMap) |
-    Word String
+    WordMap (Map TextWord WordMap) |
+    Count Word
 
 data NGramModel = NGramModel
     { ngm_n :: Int
@@ -46,7 +50,7 @@ eatSpaces [] = ""
 
 constructMap :: [String] -> WordMap
 constructMap words =
-    Word "test"
+    Count 0
 
 parse :: String -> WordMap
 parse =
