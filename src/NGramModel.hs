@@ -64,9 +64,6 @@ makeModel :: Int -> String -> NGramModel
 makeModel n text =
     NGramModel { ngm_n = n, ngm_data = parse (n - 1) text }
 
-tokenize :: String -> [String]
-tokenize = words
-
 constructMap :: Int -> [String] -> WordMap
 constructMap numPreceding =
     constructMapRecurse $ replicate numPreceding TextStart
@@ -95,4 +92,4 @@ addToMap (Count c) [] = Count $ c + 1
 
 parse :: Int -> String -> WordMap
 parse numPreceding =
-    constructMap numPreceding . tokenize
+    constructMap numPreceding . words
