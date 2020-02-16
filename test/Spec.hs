@@ -1,2 +1,6 @@
+module Main (main) where
+
+import NGramModel
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = print $ eatSpaces "   a b c"

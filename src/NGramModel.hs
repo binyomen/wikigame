@@ -1,7 +1,13 @@
+{-# LANGUAGE CPP #-}
+
+#ifdef TEST
+module NGramModel where
+#else
 module NGramModel
     ( NGramModel
     , makeModel
     ) where
+#endif
 
 import Data.Char (isSpace)
 import Data.Map.Strict (Map)

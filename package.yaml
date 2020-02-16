@@ -29,8 +29,17 @@ ghc-options:
 - -Wall
 - -Werror
 
+flags:
+  unit-tests:
+    description: Compile for unit tests
+    manual: true
+    default: false
+
 library:
   source-dirs: src
+  when:
+  - condition: flag(unit-tests)
+    cpp-options: -DTEST
 
 executables:
   wikigame-exe:
