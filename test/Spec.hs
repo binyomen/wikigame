@@ -1,6 +1,1 @@
-module Main (main) where
-
-import NGramModel
-
-main :: IO ()
-main = print $ eatSpaces "   a b c"
+{-# OPTIONS_GHC -F -pgmF hspec-discover #-}
