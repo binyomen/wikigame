@@ -11,29 +11,29 @@ import System.Random (randomRIO)
 import Text.HTML.Scalpel (URL, scrapeURL)
 
 data PageData = PageData
-    { page :: Page
-    , links :: [(String, URL)]
+    { pd_page :: Page
+    , pd_links :: [(String, URL)]
     }
 
 data RandomCrawler = RandomCrawler
-    { startUrl :: URL
-    , pageData :: Maybe PageData
+    { rc_startUrl :: URL
+    , rc_pageData :: Maybe PageData
     }
 
 instance Crawler RandomCrawler where
-    makeCrawler startUrl = RandomCrawler { startUrl = startUrl, pageData = Nothing }
+    makeCrawler startUrl = RandomCrawler { rc_startUrl = startUrl, rc_pageData = Nothing }
 
     nextPage crawler =
-        case pageData crawler of
+        case rc_pageData crawler of
             Just pageData -> do
                 nextPageData <- getNextPageData pageData
-                let newCrawler = crawler { pageData = Just nextPageData }
-                let newPage = page nextPageData
+                let newCrawler = crawler { rc_pageData = Just nextPageData }
+                let newPage = pd_page nextPageData
                 return (newCrawler, newPage)
             Nothing -> do
-                pageData <- getPageData Nothing (startUrl crawler)
-                let newCrawler = crawler { pageData = Just pageData }
-                let newPage = page pageData
+                pageData <- getPageData Nothing (rc_startUrl crawler)
+                let newCrawler = crawler { rc_pageData = Just pageData }
+                let newPage = pd_page pageData
                 return (newCrawler, newPage)
 
 getNextPageData :: PageData -> IO PageData
@@ -48,12 +48,12 @@ getPageData sourceLinkText url =
         scraper = do
             title <- scrapeTitle
             links <- scrapeLinks
-            let page = Page { title = title, url = url, sourceLinkText = sourceLinkText }
-            return $ PageData { page = page, links = links }
+            let page = Page { p_title = title, p_url = url, p_sourceLinkText = sourceLinkText }
+            return $ PageData { pd_page = page, pd_links = links }
 
 getNextPage :: PageData -> IO (String, URL)
 getNextPage pageData = do
-    let linkList = links pageData
+    let linkList = pd_links pageData
     let len = length linkList
     randomNumber <- randomRIO (0, len - 1)
     return $ linkList!!randomNumber

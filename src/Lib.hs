@@ -3,8 +3,8 @@ module Lib
     ) where
 
 import Crawler (Crawler, makeCrawler, nextPage)
-import RandomCrawler (RandomCrawler, makeCrawler, nextPage)
-import Page (title, url, sourceLinkText)
+import RandomCrawler (RandomCrawler())
+import Page (Page(..))
 
 import Data.Maybe (fromMaybe)
 import Text.HTML.Scalpel (URL)
@@ -23,12 +23,12 @@ gameLoop crawler currentUrl endUrl =
     if currentUrl == endUrl then
         putStrLn "\nFinished!!!"
     else do
-        (newCrawler, nextPage) <- nextPage crawler
-        let slt = getSourceLinkText (sourceLinkText nextPage) ++ " -> "
-        let tit = title nextPage ++ " | "
-        let u = url nextPage
+        (newCrawler, newPage) <- nextPage crawler
+        let slt = getSourceLinkText (p_sourceLinkText newPage) ++ " -> "
+        let tit = p_title newPage ++ " | "
+        let u = p_url newPage
         putStrLn $ addSpaces slt ++ addSpaces tit ++ u
-        gameLoop newCrawler (url nextPage) endUrl
+        gameLoop newCrawler (p_url newPage) endUrl
 
 getSourceLinkText :: Maybe String -> String
 getSourceLinkText = fromMaybe "<START_PAGE>"
