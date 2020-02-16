@@ -33,9 +33,27 @@ instance Ord TextWord where
     (<=) (Literal s) (Literal t) = s <= t
     (<=) (Literal _) TextStart = False
 
+instance Show TextWord where
+    show tw =
+        case tw of
+            TextStart -> "<TextStart>"
+            Literal s -> s
+
 data WordMap =
     WordMap (Map TextWord WordMap) |
     Count Word
+
+instance Eq WordMap where
+    (==) (WordMap m1) (WordMap m2) = m1 == m2
+    (==) (WordMap _) (Count _) = False
+    (==) (Count _) (WordMap _) = False
+    (==) (Count i1) (Count i2) = i1 == i2
+
+instance Show WordMap where
+    show wm =
+        case wm of
+            WordMap m -> show m
+            Count i -> show i
 
 data NGramModel = NGramModel
     { ngm_n :: Int

@@ -2,25 +2,28 @@ module NGramModelSpec (spec) where
 
 import NGramModel
 
+import qualified Data.Map.Strict as M (empty, singleton)
+
 import Test.Hspec
 
 spec :: Spec
 spec = testTokenize
 
+emptyMap :: WordMap
+emptyMap = WordMap M.empty
+
 testTokenize :: Spec
 testTokenize = parallel $
-    describe "tokenize" $ do
-        it "can tokenize empty strings" $
-            tokenize "" `shouldBe` []
-        it "can tokenize single words" $ do
-            tokenize "a" `shouldBe` ["a"]
-            tokenize "abcdef" `shouldBe` ["abcdef"]
-        it "can tokenize with surrounding whitespace" $ do
-            tokenize "  a" `shouldBe` ["a"]
-            tokenize "a  " `shouldBe` ["a"]
-            tokenize "  a  " `shouldBe` ["a"]
-            tokenize "  abcdef" `shouldBe` ["abcdef"]
-            tokenize "abcdef  " `shouldBe` ["abcdef"]
-            tokenize "  abcdef  " `shouldBe` ["abcdef"]
-        it "can tokenize long texts" $
-            tokenize " a b c d e f g   h i  " `shouldBe` ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
+    describe "addToMap" $
+        context "when map is empty" $ do
+            it "can add no words" $
+                addToMap emptyMap [] `shouldBe` emptyMap
+            it "can add one word" $
+                addToMap emptyMap [TextStart] `shouldBe`
+                    (WordMap $ M.singleton TextStart $ Count 1)
+            it "can add a sequence of words" $
+                addToMap emptyMap [TextStart, Literal "a", Literal "b", Literal "c"] `shouldBe`
+                    (WordMap $ M.singleton TextStart $
+                        WordMap $ M.singleton (Literal "a") $
+                            WordMap $ M.singleton (Literal "b") $
+                                WordMap $ M.singleton (Literal "c") (Count 1))
