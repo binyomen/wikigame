@@ -24,10 +24,10 @@ gameLoop crawler currentUrl endUrl =
         putStrLn "\nFinished!!!"
     else do
         (newCrawler, newPage) <- nextPage crawler
-        let slt = getSourceLinkText (p_sourceLinkText newPage) ++ " -> "
-        let tit = p_title newPage ++ " | "
-        let u = p_url newPage
-        putStrLn $ addSpaces slt ++ addSpaces tit ++ u
+        let sourceLinkText = getSourceLinkText (p_sourceLinkText newPage) ++ " -> "
+        let title = p_title newPage ++ " | "
+        let url = p_url newPage
+        putStrLn $ addSpaces sourceLinkText ++ addSpaces title ++ url
         gameLoop newCrawler (p_url newPage) endUrl
 
 getSourceLinkText :: Maybe String -> String
