@@ -79,10 +79,11 @@ constructMapRecurse _preceding [] = WordMap M.empty
 addToMap :: WordMap -> [TextWord] -> WordMap
 addToMap (WordMap m) (first : rest) =
     case M.lookup first m of
-        Just m' -> addToMap m' rest
-        Nothing -> WordMap $ M.insert first newSubMap m
+        Just m' -> WordMap $ M.insert first (justSubMap m') m
+        Nothing -> WordMap $ M.insert first nothingSubMap m
     where
-        newSubMap = addToMap (Count 0) rest
+        justSubMap m' = addToMap m' rest
+        nothingSubMap = addToMap (Count 0) rest
 addToMap (WordMap m) [] = WordMap m
 addToMap (Count c) (first : rest) =
     WordMap $ M.singleton first subMap
