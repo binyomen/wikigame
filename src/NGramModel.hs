@@ -56,17 +56,17 @@ instance Show WordMap where
             Count i -> show i
 
 data NGramModel = NGramModel
-    { ngm_n :: Int
+    { ngm_n :: Word
     , ngm_data :: WordMap
     }
 
-makeModel :: Int -> String -> NGramModel
+makeModel :: Word -> String -> NGramModel
 makeModel n text =
     NGramModel { ngm_n = n, ngm_data = parse (n - 1) text }
 
-constructMap :: Int -> [String] -> WordMap
+constructMap :: Word -> [String] -> WordMap
 constructMap numPreceding =
-    constructMapRecurse $ replicate numPreceding TextStart
+    constructMapRecurse $ replicate (fromIntegral numPreceding) TextStart
 
 constructMapRecurse :: [TextWord] -> [String] -> WordMap
 constructMapRecurse preceding (first : rest) =
@@ -91,6 +91,6 @@ addToMap (Count c) (first : rest) =
         subMap = addToMap (Count c) rest
 addToMap (Count c) [] = Count $ c + 1
 
-parse :: Int -> String -> WordMap
+parse :: Word -> String -> WordMap
 parse numPreceding =
     constructMap numPreceding . words

@@ -63,3 +63,4 @@ tests:
     dependencies:
     - wikigame
     - hspec
+    - QuickCheck
