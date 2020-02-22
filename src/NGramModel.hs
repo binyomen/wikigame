@@ -6,11 +6,12 @@ module NGramModel where
 module NGramModel
     ( NGramModel
     , makeModel
+    , scoreText
     ) where
 #endif
 
 import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M (lookup, insert, empty, singleton)
+import qualified Data.Map.Strict as M (lookup, insert, empty, singleton, toList)
 
 data TextWord =
     TextStart |
@@ -94,3 +95,45 @@ addToMap (Count c) [] = Count $ c + 1
 parse :: Word -> String -> WordMap
 parse numPreceding =
     constructMap numPreceding . words
+
+scoreText :: NGramModel -> String -> Double
+scoreText model text =
+    sum wordScores
+    where
+        tokens = words text
+        numPreceding = ngm_n model - 1
+        initialPreceding = replicate (fromIntegral numPreceding) TextStart
+        wordScores = scoreWords (ngm_data model) tokens initialPreceding
+
+scoreWords :: WordMap -> [String] -> [TextWord] -> [Double]
+scoreWords wordMap (first : rest) preceding =
+    scoreWord wordMap first preceding :
+        scoreWords wordMap rest nextPreceding
+    where
+        nextPreceding = tail $ preceding ++ [Literal first]
+scoreWords _ [] _ = []
+
+scoreWord :: WordMap -> String -> [TextWord] -> Double
+scoreWord wordMap word preceding =
+    log probability
+    where
+        numerator :: Double
+        numerator = fromIntegral $ getCount wordMap (preceding ++ [Literal word])
+        denominator :: Double
+        denominator = fromIntegral $ totalCount wordMap
+        probability :: Double
+        probability = numerator / denominator
+
+getCount :: WordMap -> [TextWord] -> Word
+getCount (WordMap m) (first : rest) =
+    case M.lookup first m of
+        Just m' -> getCount m' rest
+        Nothing -> 0
+getCount (WordMap _) [] = 0
+getCount (Count _) (_ : _) = 0
+getCount (Count c) [] = c
+
+totalCount :: WordMap -> Word
+totalCount (WordMap m) =
+    sum $ map (\(_, v) -> totalCount v) (M.toList m)
+totalCount (Count c) = c
