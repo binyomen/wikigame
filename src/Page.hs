@@ -5,6 +5,7 @@ module Page
     , fullUrl
     , scrapeTitle
     , scrapeLinks
+    , scrapeContentText
     , convertMaybe
     ) where
 
@@ -46,6 +47,10 @@ scrapeLinks =
             linkText <- text anySelector
             linkUrl <- attr "href" anySelector
             return (linkText, fromJust $ stripPrefix "/wiki/" linkUrl)
+
+scrapeContentText :: Scraper String String
+scrapeContentText =
+    text $ "div" @: ["id" @= "mw-content-text"]
 
 isWikipediaLink :: String -> String -> Bool
 isWikipediaLink key value =

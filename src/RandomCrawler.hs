@@ -21,7 +21,7 @@ data RandomCrawler = RandomCrawler
     }
 
 instance Crawler RandomCrawler where
-    makeCrawler startUrl = RandomCrawler { rc_startUrl = startUrl, rc_pageData = Nothing }
+    makeCrawler startUrl _ = return $ RandomCrawler { rc_startUrl = startUrl, rc_pageData = Nothing }
 
     nextPage crawler =
         case rc_pageData crawler of

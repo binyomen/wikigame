@@ -3,7 +3,7 @@ module Lib
     ) where
 
 import Crawler (Crawler, makeCrawler, nextPage)
-import RandomCrawler (RandomCrawler())
+import NGramCrawler (NGramCrawler())
 import Page (Page(..))
 
 import Data.Maybe (fromMaybe)
@@ -13,10 +13,8 @@ import System.IO (hSetEncoding, stdout, utf8)
 playGame :: URL -> URL -> IO ()
 playGame startUrl endUrl = do
     hSetEncoding stdout utf8
+    crawler <- makeCrawler startUrl endUrl :: IO NGramCrawler
     gameLoop crawler startUrl endUrl
-    where
-        crawler :: RandomCrawler
-        crawler = makeCrawler startUrl
 
 gameLoop :: Crawler a => a -> URL -> URL -> IO ()
 gameLoop crawler currentUrl endUrl =
