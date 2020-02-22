@@ -9,7 +9,17 @@ import NGramModel (NGramModel, makeModel, scoreText)
 import Page (Page(..), fullUrl, scrapeTitle, scrapeLinks, scrapeContentText, convertMaybe)
 
 import Data.Foldable (maximumBy)
+import Data.List (sortBy)
 import Text.HTML.Scalpel (URL, scrapeURL)
+
+n :: Word
+n = 1
+
+maxTopLinks :: Word
+maxTopLinks = 5
+
+maxIndexedModels :: Word
+maxIndexedModels = 10
 
 data PageData = PageData
     { pd_page :: Page
@@ -19,45 +29,52 @@ data PageData = PageData
 data NGramCrawler = NGramCrawler
     { ngc_startUrl :: URL
     , ngc_pageData :: Maybe PageData
-    , ngc_destinationModel :: NGramModel
+    , ngc_endUrlModel :: NGramModel
+    , ngc_indexedModels :: [NGramModel]
     }
 
 instance Crawler NGramCrawler where
     makeCrawler startUrl endUrl = do
-        destinationModel <- makeModelFromUrl endUrl
+        endUrlText <- getUrlContentText endUrl
         return $ NGramCrawler
             { ngc_startUrl = startUrl
             , ngc_pageData = Nothing
-            , ngc_destinationModel = destinationModel
+            , ngc_endUrlModel = makeModel n endUrlText
+            , ngc_indexedModels = map (`makeModel` endUrlText) [1..10]
             }
 
     nextPage crawler =
         case ngc_pageData crawler of
             Just pageData -> do
-                nextPageData <- getNextPageData pageData $ ngc_destinationModel crawler
+                nextPageData <- getNextPageData pageData crawler
                 let newCrawler = crawler { ngc_pageData = Just nextPageData }
                 let newPage = pd_page nextPageData
                 return (newCrawler, newPage)
             Nothing -> do
-                pageData <- getPageData Nothing (ngc_startUrl crawler) (ngc_destinationModel crawler)
+                pageData <- getPageData Nothing (ngc_startUrl crawler) crawler
                 let newCrawler = crawler { ngc_pageData = Just pageData }
                 let newPage = pd_page pageData
                 return (newCrawler, newPage)
 
-getNextPageData :: PageData -> NGramModel -> IO PageData
-getNextPageData pageData model = do
+getNextPageData :: PageData -> NGramCrawler -> IO PageData
+getNextPageData pageData crawler = do
     let (sourceLinkText, url) = getNextPage pageData
-    getPageData (Just sourceLinkText) url model
+    getPageData (Just sourceLinkText) url crawler
 
-getPageData :: Maybe String -> URL -> NGramModel -> IO PageData
-getPageData sourceLinkText url model = do
+getPageData :: Maybe String -> URL -> NGramCrawler -> IO PageData
+getPageData sourceLinkText url crawler = do
     let scraper = do
             title <- scrapeTitle
             links <- scrapeLinks
-            let linkScoresIo = listIoToIoList $ map (scoreLink model) links
-            return (title, linkScoresIo)
-    (title, linkScoresIo) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
-    linkScores <- linkScoresIo
+            return (title, links)
+    (title, links) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
+
+    let linkNameScores = map (scoreLinkName crawler) links
+    let sortedLinkNameScores = sortBy compareLinkScores linkNameScores
+    let sortedLinks = map fst sortedLinkNameScores
+    let topLinks = take (fromIntegral maxTopLinks) sortedLinks
+    linkScores <- listIoToIoList $ map (scoreLink crawler) topLinks
+
     let page = Page { p_title = title, p_url = url, p_sourceLinkText = sourceLinkText }
     return $ PageData { pd_page = page, pd_linkScores = linkScores }
 
@@ -66,28 +83,34 @@ getNextPage pageData =
     link
     where
         scores = pd_linkScores pageData
-        maxScoreLink = maximumBy compareLinks scores
+        maxScoreLink = maximumBy compareLinkScores scores
         (link, _) = maxScoreLink
 
-n :: Word
-n = 1
+getUrlContentText :: URL -> IO String
+getUrlContentText url =
+    scrapeURL (fullUrl url) scrapeContentText >>= convertMaybe url
 
-makeModelFromUrl :: URL -> IO NGramModel
-makeModelFromUrl url =
+scoreLinkName :: NGramCrawler -> (String, URL) -> ((String, URL), Double)
+scoreLinkName crawler (sourceLinkText, url) =
+    if numWords <= maxIndexedModels then
+        ((sourceLinkText, url), scoreText model sourceLinkText)
+    else
+        ((sourceLinkText, url), 0)
+    where
+        numWords = fromIntegral $ length $ words sourceLinkText
+        model = ngc_indexedModels crawler !! fromIntegral (numWords - 1)
+
+scoreLink :: NGramCrawler -> (String, URL) -> IO ((String, URL), Double)
+scoreLink crawler (sourceLinkText, url) =
     scrapeURL (fullUrl url) scraper >>= convertMaybe url
     where
-        scraper = makeModel n <$> scrapeContentText
-
-scoreLink :: NGramModel -> (String, URL) -> IO ((String, URL), Double)
-scoreLink model (sourceLinkText, url) =
-    scrapeURL (fullUrl url) scraper >>= convertMaybe url
-    where
+        model = ngc_endUrlModel crawler
         scraper = do
             contentText <- scrapeContentText
             return ((sourceLinkText, url), scoreText model contentText)
 
-compareLinks :: ((String, URL), Double) -> ((String, URL), Double) -> Ordering
-compareLinks (_, score1) (_, score2) = compare score1 score2
+compareLinkScores :: ((String, URL), Double) -> ((String, URL), Double) -> Ordering
+compareLinkScores (_, score1) (_, score2) = compare score1 score2
 
 listIoToIoList :: [IO a] -> IO [a]
 listIoToIoList (first : rest) = do
