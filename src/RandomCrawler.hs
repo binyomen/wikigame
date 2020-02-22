@@ -38,8 +38,8 @@ instance Crawler RandomCrawler where
 
 getNextPageData :: PageData -> IO PageData
 getNextPageData pageData = do
-    (slt, u) <- getNextPage pageData
-    getPageData (Just slt) u
+    (sourceLinkText, url) <- getNextPage pageData
+    getPageData (Just sourceLinkText) url
 
 getPageData :: Maybe String -> URL -> IO PageData
 getPageData sourceLinkText url =
@@ -53,7 +53,7 @@ getPageData sourceLinkText url =
 
 getNextPage :: PageData -> IO (String, URL)
 getNextPage pageData = do
-    let linkList = pd_links pageData
-    let len = length linkList
+    let links = pd_links pageData
+    let len = length links
     randomNumber <- randomRIO (0, len - 1)
-    return $ linkList!!randomNumber
+    return $ links!!randomNumber
