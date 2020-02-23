@@ -8,6 +8,8 @@ import Crawler (Crawler, makeCrawler, nextPage)
 import NGramModel (NGramModel, makeModel, scoreText)
 import Page (Page(..), fullUrl, scrapeTitle, scrapeLinks, scrapeContentText, convertMaybe)
 
+import Control.Concurrent (forkIO)
+import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
 import Data.Foldable (maximumBy)
 import Data.List (sortBy)
 import Text.HTML.Scalpel (URL, scrapeURL)
@@ -73,7 +75,11 @@ getPageData sourceLinkText url crawler = do
     let sortedLinkNameScores = sortBy compareLinkScores linkNameScores
     let sortedLinks = map fst sortedLinkNameScores
     let topLinks = take (fromIntegral maxTopLinks) sortedLinks
-    linkScores <- listIoToIoList $ map (scoreLink crawler) topLinks
+
+    let ioList = map (scoreLink crawler) topLinks
+    let mVarIoList = map ioToMVar ioList
+    mVars <- listIoToIoList mVarIoList
+    linkScores <- listIoToIoList $ map takeMVar mVars
 
     let page = Page { p_title = title, p_url = url, p_sourceLinkText = sourceLinkText }
     return $ PageData { pd_page = page, pd_linkScores = linkScores }
@@ -111,6 +117,15 @@ scoreLink crawler (sourceLinkText, url) =
 
 compareLinkScores :: ((String, URL), Double) -> ((String, URL), Double) -> Ordering
 compareLinkScores (_, score1) (_, score2) = compare score1 score2
+
+ioToMVar :: IO a -> IO (MVar a)
+ioToMVar io = do
+    mVar <- newEmptyMVar
+    let thread = do
+            result <- io
+            putMVar mVar result
+    _ <- forkIO thread
+    return mVar
 
 listIoToIoList :: [IO a] -> IO [a]
 listIoToIoList (first : rest) = do
