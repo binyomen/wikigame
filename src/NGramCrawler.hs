@@ -12,6 +12,10 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
 import Data.Foldable (maximumBy)
 import Data.List (sortBy)
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M (empty, insert, lookup)
+import Data.Set (Set)
+import qualified Data.Set as S (empty, insert, notMember)
 import Text.HTML.Scalpel (URL, scrapeURL)
 
 n :: Word
@@ -33,6 +37,8 @@ data NGramCrawler = NGramCrawler
     , ngc_pageData :: Maybe PageData
     , ngc_endUrlModel :: NGramModel
     , ngc_indexedModels :: [NGramModel]
+    , ngc_urlScores :: Map URL Double
+    , ngc_visitedUrls :: Set URL
     }
 
 instance Crawler NGramCrawler where
@@ -43,27 +49,29 @@ instance Crawler NGramCrawler where
             , ngc_pageData = Nothing
             , ngc_endUrlModel = makeModel n endUrlText
             , ngc_indexedModels = map (`makeModel` endUrlText) [1..10]
+            , ngc_urlScores = M.empty
+            , ngc_visitedUrls = S.empty
             }
 
     nextPage crawler =
         case ngc_pageData crawler of
             Just pageData -> do
-                nextPageData <- getNextPageData pageData crawler
-                let newCrawler = crawler { ngc_pageData = Just nextPageData }
+                (nextPageData, newCrawlerWithoutPageData) <- getNextPageData pageData crawler
+                let newCrawler = newCrawlerWithoutPageData { ngc_pageData = Just nextPageData }
                 let newPage = pd_page nextPageData
                 return (newCrawler, newPage)
             Nothing -> do
-                pageData <- getPageData Nothing (ngc_startUrl crawler) crawler
-                let newCrawler = crawler { ngc_pageData = Just pageData }
+                (pageData, newCrawlerWithoutPageData) <- getPageData Nothing (ngc_startUrl crawler) crawler
+                let newCrawler = newCrawlerWithoutPageData { ngc_pageData = Just pageData }
                 let newPage = pd_page pageData
                 return (newCrawler, newPage)
 
-getNextPageData :: PageData -> NGramCrawler -> IO PageData
+getNextPageData :: PageData -> NGramCrawler -> IO (PageData, NGramCrawler)
 getNextPageData pageData crawler = do
     let (sourceLinkText, url) = getNextPage pageData
     getPageData (Just sourceLinkText) url crawler
 
-getPageData :: Maybe String -> URL -> NGramCrawler -> IO PageData
+getPageData :: Maybe String -> URL -> NGramCrawler -> IO (PageData, NGramCrawler)
 getPageData sourceLinkText url crawler = do
     let scraper = do
             title <- scrapeTitle
@@ -74,15 +82,28 @@ getPageData sourceLinkText url crawler = do
     let linkNameScores = map (scoreLinkName crawler) links
     let sortedLinkNameScores = sortBy compareLinkScores linkNameScores
     let sortedLinks = map fst sortedLinkNameScores
-    let topLinks = take (fromIntegral maxTopLinks) sortedLinks
+    let filteredLinks = filter ((`S.notMember` ngc_visitedUrls crawler) . snd) sortedLinks
+    let topLinks = take (fromIntegral maxTopLinks) filteredLinks
 
     let ioList = map (scoreLink crawler) topLinks
     let mVarIoList = map ioToMVar ioList
     mVars <- listIoToIoList mVarIoList
     linkScores <- listIoToIoList $ map takeMVar mVars
 
+    let newUrlScores = foldr
+            (\((_, u), score) m -> M.insert u score m)
+            (ngc_urlScores crawler)
+            linkScores
+    let newVisitedUrls = S.insert url (ngc_visitedUrls crawler)
+
     let page = Page { p_title = title, p_url = url, p_sourceLinkText = sourceLinkText }
-    return $ PageData { pd_page = page, pd_linkScores = linkScores }
+    return
+        ( PageData { pd_page = page, pd_linkScores = linkScores }
+        , crawler
+            { ngc_urlScores = newUrlScores
+            , ngc_visitedUrls = newVisitedUrls
+            }
+        )
 
 getNextPage :: PageData -> (String, URL)
 getNextPage pageData =
@@ -108,12 +129,15 @@ scoreLinkName crawler (sourceLinkText, url) =
 
 scoreLink :: NGramCrawler -> (String, URL) -> IO ((String, URL), Double)
 scoreLink crawler (sourceLinkText, url) =
-    scrapeURL (fullUrl url) scraper >>= convertMaybe url
-    where
-        model = ngc_endUrlModel crawler
-        scraper = do
-            contentText <- scrapeContentText
-            return ((sourceLinkText, url), scoreText model contentText)
+    case M.lookup url $ ngc_urlScores crawler of
+        Just score -> return ((sourceLinkText, url), score)
+        Nothing ->
+            scrapeURL (fullUrl url) scraper >>= convertMaybe url
+            where
+                model = ngc_endUrlModel crawler
+                scraper = do
+                    contentText <- scrapeContentText
+                    return ((sourceLinkText, url), scoreText model contentText)
 
 compareLinkScores :: ((String, URL), Double) -> ((String, URL), Double) -> Ordering
 compareLinkScores (_, score1) (_, score2) = compare score1 score2
