@@ -12,6 +12,8 @@ module NGramModel
 
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M (lookup, insert, empty, singleton, toList)
+import Data.Set (Set)
+import qualified Data.Set as S (fromList, notMember)
 
 data TextWord =
     TextStart |
@@ -62,6 +64,138 @@ data NGramModel = NGramModel
     , ngm_data :: WordMap
     }
 
+-- taken from the NLTK: https://gist.github.com/sebleier/554280
+stopWords :: Set String
+stopWords = S.fromList
+    [ "i"
+    , "me"
+    , "my"
+    , "myself"
+    , "we"
+    , "our"
+    , "ours"
+    , "ourselves"
+    , "you"
+    , "your"
+    , "yours"
+    , "yourself"
+    , "yourselves"
+    , "he"
+    , "him"
+    , "his"
+    , "himself"
+    , "she"
+    , "her"
+    , "hers"
+    , "herself"
+    , "it"
+    , "its"
+    , "itself"
+    , "they"
+    , "them"
+    , "their"
+    , "theirs"
+    , "themselves"
+    , "what"
+    , "which"
+    , "who"
+    , "whom"
+    , "this"
+    , "that"
+    , "these"
+    , "those"
+    , "am"
+    , "is"
+    , "are"
+    , "was"
+    , "were"
+    , "be"
+    , "been"
+    , "being"
+    , "have"
+    , "has"
+    , "had"
+    , "having"
+    , "do"
+    , "does"
+    , "did"
+    , "doing"
+    , "a"
+    , "an"
+    , "the"
+    , "and"
+    , "but"
+    , "if"
+    , "or"
+    , "because"
+    , "as"
+    , "until"
+    , "while"
+    , "of"
+    , "at"
+    , "by"
+    , "for"
+    , "with"
+    , "about"
+    , "against"
+    , "between"
+    , "into"
+    , "through"
+    , "during"
+    , "before"
+    , "after"
+    , "above"
+    , "below"
+    , "to"
+    , "from"
+    , "up"
+    , "down"
+    , "in"
+    , "out"
+    , "on"
+    , "off"
+    , "over"
+    , "under"
+    , "again"
+    , "further"
+    , "then"
+    , "once"
+    , "here"
+    , "there"
+    , "when"
+    , "where"
+    , "why"
+    , "how"
+    , "all"
+    , "any"
+    , "both"
+    , "each"
+    , "few"
+    , "more"
+    , "most"
+    , "other"
+    , "some"
+    , "such"
+    , "no"
+    , "nor"
+    , "not"
+    , "only"
+    , "own"
+    , "same"
+    , "so"
+    , "than"
+    , "too"
+    , "very"
+    , "s"
+    , "t"
+    , "can"
+    , "will"
+    , "just"
+    , "don"
+    , "should"
+    , "now"
+    ]
+
 makeModel :: Word -> Bool -> String -> NGramModel
 makeModel n smoothed text =
     NGramModel { ngm_n = n, ngm_smoothed = smoothed, ngm_data = parse (n - 1) text }
@@ -93,15 +227,18 @@ addToMap (Count c) (first : rest) =
         subMap = addToMap (Count c) rest
 addToMap (Count c) [] = Count $ c + 1
 
+tokenize :: String -> [String]
+tokenize text = filter (`S.notMember` stopWords) $ words text
+
 parse :: Word -> String -> WordMap
 parse numPreceding =
-    constructMap numPreceding . words
+    constructMap numPreceding . tokenize
 
 scoreText :: NGramModel -> String -> Double
 scoreText model text =
     sum wordScores
     where
-        tokens = words text
+        tokens = tokenize text
         numPreceding = ngm_n model - 1
         initialPreceding = replicate (fromIntegral numPreceding) TextStart
         wordScores = scoreWords model tokens initialPreceding
