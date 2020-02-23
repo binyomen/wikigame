@@ -58,12 +58,13 @@ instance Show WordMap where
 
 data NGramModel = NGramModel
     { ngm_n :: Word
+    , ngm_smoothed :: Bool
     , ngm_data :: WordMap
     }
 
-makeModel :: Word -> String -> NGramModel
-makeModel n text =
-    NGramModel { ngm_n = n, ngm_data = parse (n - 1) text }
+makeModel :: Word -> Bool -> String -> NGramModel
+makeModel n smoothed text =
+    NGramModel { ngm_n = n, ngm_smoothed = smoothed, ngm_data = parse (n - 1) text }
 
 constructMap :: Word -> [String] -> WordMap
 constructMap numPreceding =
@@ -103,26 +104,32 @@ scoreText model text =
         tokens = words text
         numPreceding = ngm_n model - 1
         initialPreceding = replicate (fromIntegral numPreceding) TextStart
-        wordScores = scoreWords (ngm_data model) tokens initialPreceding
+        wordScores = scoreWords model tokens initialPreceding
 
-scoreWords :: WordMap -> [String] -> [TextWord] -> [Double]
-scoreWords wordMap (first : rest) preceding =
-    scoreWord wordMap first preceding :
-        scoreWords wordMap rest nextPreceding
+scoreWords :: NGramModel -> [String] -> [TextWord] -> [Double]
+scoreWords model (first : rest) preceding =
+    scoreWord model first preceding :
+        scoreWords model rest nextPreceding
     where
         nextPreceding = tail $ preceding ++ [Literal first]
 scoreWords _ [] _ = []
 
-scoreWord :: WordMap -> String -> [TextWord] -> Double
-scoreWord wordMap word preceding =
+scoreWord :: NGramModel -> String -> [TextWord] -> Double
+scoreWord model word preceding =
     log probability
     where
         numerator :: Double
-        numerator = fromIntegral $ getCount wordMap (preceding ++ [Literal word])
+        numerator = fromIntegral $ getCount (ngm_data model) (preceding ++ [Literal word])
+        smoothedNumerator :: Double
+        smoothedNumerator =
+            if ngm_smoothed model && numerator == 0 then
+                1
+            else
+                numerator
         denominator :: Double
-        denominator = fromIntegral $ totalCount wordMap
+        denominator = fromIntegral $ totalCount $ ngm_data model
         probability :: Double
-        probability = numerator / denominator
+        probability = smoothedNumerator / denominator
 
 getCount :: WordMap -> [TextWord] -> Word
 getCount (WordMap m) (first : rest) =

@@ -47,8 +47,8 @@ instance Crawler NGramCrawler where
         return $ NGramCrawler
             { ngc_startUrl = startUrl
             , ngc_pageData = Nothing
-            , ngc_endUrlModel = makeModel n endUrlText
-            , ngc_indexedModels = map (`makeModel` endUrlText) [1..10]
+            , ngc_endUrlModel = makeModel n True endUrlText
+            , ngc_indexedModels = map (flip (`makeModel` False) endUrlText) [1..10]
             , ngc_urlScores = M.empty
             , ngc_visitedUrls = S.empty
             }
