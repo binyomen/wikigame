@@ -15,6 +15,8 @@ import Text.Printf (printf)
 playGame :: URL -> URL -> IO ()
 playGame startUrl endUrl = do
     hSetEncoding stdout utf8
+    putStrLn $ "Playing the Wikipedia game from " ++ startUrl ++ " to " ++ endUrl ++ "\n"
+
     crawler <- makeCrawler startUrl endUrl :: IO NGramCrawler
     startTime <- getCurrentTime
     hops <- gameLoop crawler startUrl endUrl 0
