@@ -11,7 +11,7 @@ import Page (Page(..), fullUrl, scrapeTitle, scrapeLinks, scrapeContentText, con
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
 import Data.Foldable (maximumBy)
-import Data.List (sortBy)
+import Data.List (sortBy, elem)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M (empty, insert, lookup)
 import Data.Set (Set)
@@ -140,8 +140,12 @@ scoreLink crawler (sourceLinkText, url) =
             where
                 model = ngc_endUrlModel crawler
                 scraper = do
-                    contentText <- scrapeContentText
-                    return ((sourceLinkText, url), scoreText model contentText)
+                    links <- scrapeLinks
+                    if ngc_endUrl crawler `elem` map snd links then
+                        return ((sourceLinkText, url), infinity)
+                    else do
+                        contentText <- scrapeContentText
+                        return ((sourceLinkText, url), scoreText model contentText)
 
 compareLinkScores :: ((String, URL), Double) -> ((String, URL), Double) -> Ordering
 compareLinkScores (_, score1) (_, score2) = compare score1 score2
