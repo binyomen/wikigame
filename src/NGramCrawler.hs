@@ -27,6 +27,9 @@ maxTopLinks = 5
 maxIndexedModels :: Word
 maxIndexedModels = 10
 
+infinity :: Double
+infinity = 1 / 0
+
 data PageData = PageData
     { pd_page :: Page
     , pd_linkScores :: [((String, URL), Double)]
@@ -34,6 +37,7 @@ data PageData = PageData
 
 data NGramCrawler = NGramCrawler
     { ngc_startUrl :: URL
+    , ngc_endUrl :: URL
     , ngc_pageData :: Maybe PageData
     , ngc_endUrlModel :: NGramModel
     , ngc_indexedModels :: [NGramModel]
@@ -46,6 +50,7 @@ instance Crawler NGramCrawler where
         endUrlText <- getUrlContentText endUrl
         return $ NGramCrawler
             { ngc_startUrl = startUrl
+            , ngc_endUrl = endUrl
             , ngc_pageData = Nothing
             , ngc_endUrlModel = makeModel n True endUrlText
             , ngc_indexedModels = map (flip (`makeModel` False) endUrlText) [1..10]
@@ -118,11 +123,10 @@ getUrlContentText url =
     scrapeURL (fullUrl url) scrapeContentText >>= convertMaybe url
 
 scoreLinkName :: NGramCrawler -> (String, URL) -> ((String, URL), Double)
-scoreLinkName crawler (sourceLinkText, url) =
-    if numWords <= maxIndexedModels then
-        ((sourceLinkText, url), scoreText model sourceLinkText)
-    else
-        ((sourceLinkText, url), 0)
+scoreLinkName crawler (sourceLinkText, url)
+    | url == ngc_endUrl crawler = ((sourceLinkText, url), infinity)
+    | numWords <= maxIndexedModels = ((sourceLinkText, url), scoreText model sourceLinkText)
+    | otherwise = ((sourceLinkText, url), 0)
     where
         numWords = fromIntegral $ length $ words sourceLinkText
         model = ngc_indexedModels crawler !! fromIntegral (numWords - 1)
