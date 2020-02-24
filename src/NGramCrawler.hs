@@ -32,7 +32,7 @@ infinity = 1 / 0
 
 data PageData = PageData
     { pd_page :: Page
-    , pd_linkScores :: [((String, URL), Double)]
+    , pd_links :: [(String, URL)]
     }
 
 data NGramCrawler = NGramCrawler
@@ -66,23 +66,31 @@ instance Crawler NGramCrawler where
                 let newPage = pd_page nextPageData
                 return (newCrawler, newPage)
             Nothing -> do
-                (pageData, newCrawlerWithoutPageData) <- getPageData Nothing (ngc_startUrl crawler) crawler
-                let newCrawler = newCrawlerWithoutPageData { ngc_pageData = Just pageData }
+                pageData <- getPageData Nothing (ngc_startUrl crawler)
+                let newCrawler = crawler { ngc_pageData = Just pageData }
                 let newPage = pd_page pageData
                 return (newCrawler, newPage)
 
 getNextPageData :: PageData -> NGramCrawler -> IO (PageData, NGramCrawler)
 getNextPageData pageData crawler = do
-    let (sourceLinkText, url) = getNextPage pageData
-    getPageData (Just sourceLinkText) url crawler
+    (sourceLinkText, url, newCrawler) <- getNextPage crawler pageData
+    nextPageData <- getPageData (Just sourceLinkText) url
+    return (nextPageData, newCrawler)
 
-getPageData :: Maybe String -> URL -> NGramCrawler -> IO (PageData, NGramCrawler)
-getPageData sourceLinkText url crawler = do
+getPageData :: Maybe String -> URL -> IO PageData
+getPageData sourceLinkText url = do
     let scraper = do
             title <- scrapeTitle
             links <- scrapeLinks
             return (title, links)
     (title, links) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
+
+    let page = Page { p_title = title, p_url = url, p_sourceLinkText = sourceLinkText }
+    return PageData { pd_page = page, pd_links = links }
+
+getNextPage :: NGramCrawler -> PageData -> IO (String, URL, NGramCrawler)
+getNextPage crawler pageData = do
+    let links = pd_links pageData
 
     let linkNameScores = map (scoreLinkName crawler) links
     let sortedLinkNameScores = sortBy (flip compareLinkScores) linkNameScores
@@ -95,28 +103,20 @@ getPageData sourceLinkText url crawler = do
     mVars <- listIoToIoList mVarIoList
     linkScores <- listIoToIoList $ map takeMVar mVars
 
+    let maxScoreLink = maximumBy compareLinkScores linkScores
+    let (sourceLinkText, url) = fst maxScoreLink
+
     let newUrlScores = foldr
             (\((_, u), score) m -> M.insert u score m)
             (ngc_urlScores crawler)
             linkScores
     let newVisitedUrls = S.insert url (ngc_visitedUrls crawler)
 
-    let page = Page { p_title = title, p_url = url, p_sourceLinkText = sourceLinkText }
     return
-        ( PageData { pd_page = page, pd_linkScores = linkScores }
-        , crawler
-            { ngc_urlScores = newUrlScores
-            , ngc_visitedUrls = newVisitedUrls
-            }
+        ( sourceLinkText
+        , url
+        , crawler { ngc_urlScores = newUrlScores, ngc_visitedUrls = newVisitedUrls }
         )
-
-getNextPage :: PageData -> (String, URL)
-getNextPage pageData =
-    link
-    where
-        scores = pd_linkScores pageData
-        maxScoreLink = maximumBy compareLinkScores scores
-        (link, _) = maxScoreLink
 
 getUrlContentText :: URL -> IO String
 getUrlContentText url =
