@@ -85,7 +85,7 @@ getPageData sourceLinkText url crawler = do
     (title, links) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
 
     let linkNameScores = map (scoreLinkName crawler) links
-    let sortedLinkNameScores = sortBy compareLinkScores linkNameScores
+    let sortedLinkNameScores = sortBy (flip compareLinkScores) linkNameScores
     let sortedLinks = map fst sortedLinkNameScores
     let filteredLinks = filter ((`S.notMember` ngc_visitedUrls crawler) . snd) sortedLinks
     let topLinks = take (fromIntegral maxTopLinks) filteredLinks
