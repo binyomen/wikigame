@@ -7,19 +7,33 @@ import NGramCrawler (NGramCrawler())
 import Page (Page(..))
 
 import Data.Maybe (fromMaybe)
+import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import Text.HTML.Scalpel (URL)
 import System.IO (hSetEncoding, stdout, utf8)
+import Text.Printf (printf)
 
 playGame :: URL -> URL -> IO ()
 playGame startUrl endUrl = do
     hSetEncoding stdout utf8
     crawler <- makeCrawler startUrl endUrl :: IO NGramCrawler
-    gameLoop crawler startUrl endUrl 0
+    startTime <- getCurrentTime
+    hops <- gameLoop crawler startUrl endUrl 0
+    endTime <- getCurrentTime
 
-gameLoop :: Crawler a => a -> URL -> URL -> Word -> IO ()
+    putStrLn "\n"
+    putStrLn $ "Finished in " ++ show hops ++ " hops"
+
+    let diff = diffUTCTime endTime startTime
+    let totalSeconds = realToFrac $ toRational diff :: Double
+    let minutes = truncate $ totalSeconds / (60 :: Double) :: Int
+    let seconds = totalSeconds - (fromIntegral minutes * 60)
+
+    printf  "            %dm%0.3fs (%0.3fs)\n" minutes seconds totalSeconds
+
+gameLoop :: Crawler a => a -> URL -> URL -> Word -> IO Word
 gameLoop crawler currentUrl endUrl pagesVisited =
     if currentUrl == endUrl then
-        putStrLn $ "\nFinished in " ++ show (pagesVisited - 1) ++ " hops!!!"
+        return $ pagesVisited - 1
     else do
         (newCrawler, newPage) <- nextPage crawler
         let sourceLinkText = getSourceLinkText (p_sourceLinkText newPage) ++ " -> "
