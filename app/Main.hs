@@ -5,6 +5,7 @@ import System.Exit (exitWith, ExitCode(..))
 
 import Lib (playGame)
 
+-- We should be given two command line args: the start URL, and the end URL.
 main :: IO ()
 main = do
     args <- getArgs

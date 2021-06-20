@@ -27,6 +27,7 @@ import Text.HTML.Scalpel
 data Page = Page
     { p_title :: String
     , p_url :: URL
+    -- The text of the link which led to this page. Just used for logging.
     , p_sourceLinkText :: Maybe String
     }
 

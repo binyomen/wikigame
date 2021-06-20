@@ -47,13 +47,13 @@ gameLoop crawler currentUrl endUrl pagesVisited =
 getSourceLinkText :: Maybe String -> String
 getSourceLinkText = fromMaybe "<START_PAGE>"
 
-colLen :: Int
-colLen = 60
+columnLength :: Int
+columnLength = 60
 
 addSpaces :: String -> String
 addSpaces s =
-    if len < colLen then
-        s ++ replicate (colLen - len) ' '
+    if len < columnLength then
+        s ++ replicate (columnLength - len) ' '
     else
         s
     where
