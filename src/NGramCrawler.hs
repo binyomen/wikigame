@@ -11,7 +11,7 @@ import Page (Page(..), fullUrl, scrapeTitle, scrapeLinks, scrapeContentText, con
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
 import Data.Foldable (maximumBy)
-import Data.List (sortBy, elem)
+import Data.List (sortBy)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M (empty, insert, lookup)
 import Data.Set (Set)
