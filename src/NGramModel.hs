@@ -198,7 +198,7 @@ stopWords = S.fromList
 
 makeModel :: Word -> Bool -> String -> NGramModel
 makeModel n smoothed text =
-    NGramModel { ngm_n = n, ngm_smoothed = smoothed, ngm_data = parse (n - 1) text }
+    NGramModel{ngm_n = n, ngm_smoothed = smoothed, ngm_data = parse (n - 1) text}
 
 constructMap :: Word -> [String] -> WordMap
 constructMap numPreceding =

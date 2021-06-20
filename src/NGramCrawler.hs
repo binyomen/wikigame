@@ -75,14 +75,14 @@ instance Crawler NGramCrawler where
             Just pageData -> do
                 -- If we have a current page, try to get the next page from it.
                 (nextPageData, newCrawlerWithoutPageData) <- getNextPageData pageData crawler
-                let newCrawler = newCrawlerWithoutPageData { ngc_pageData = Just nextPageData }
+                let newCrawler = newCrawlerWithoutPageData{ngc_pageData = Just nextPageData}
                 let newPage = pd_page nextPageData
                 return (newCrawler, newPage)
             Nothing -> do
                 -- If we don't have a current page (i.e. this is the first call
                 -- to `nextPage`), just parse the start URL and return.
                 pageData <- getPageData Link{l_text = Nothing, l_url = ngc_startUrl crawler}
-                let newCrawler = crawler { ngc_pageData = Just pageData }
+                let newCrawler = crawler{ngc_pageData = Just pageData}
                 let newPage = pd_page pageData
                 return (newCrawler, newPage)
 
@@ -104,8 +104,8 @@ getPageData link = do
             return (title, links)
     (title, links) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
 
-    let page = Page { p_title = title, p_link = link }
-    return PageData { pd_page = page, pd_links = links }
+    let page = Page{p_title = title, p_link = link}
+    return PageData{pd_page = page, pd_links = links}
     where
         url = l_url link
 
@@ -146,7 +146,7 @@ getNextPage crawler pageData = do
 
     return
         ( maxScoreLink
-        , crawler { ngc_urlScoreCache = newUrlScores, ngc_visitedUrls = newVisitedUrls }
+        , crawler{ngc_urlScoreCache = newUrlScores, ngc_visitedUrls = newVisitedUrls}
         )
 
 -- Get the content of the page identified by a given URL.

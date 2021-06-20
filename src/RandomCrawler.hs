@@ -21,18 +21,18 @@ data RandomCrawler = RandomCrawler
     }
 
 instance Crawler RandomCrawler where
-    makeCrawler startUrl _ = return $ RandomCrawler { rc_startUrl = startUrl, rc_pageData = Nothing }
+    makeCrawler startUrl _ = return $ RandomCrawler{rc_startUrl = startUrl, rc_pageData = Nothing}
 
     nextPage crawler =
         case rc_pageData crawler of
             Just pageData -> do
                 nextPageData <- getNextPageData pageData
-                let newCrawler = crawler { rc_pageData = Just nextPageData }
+                let newCrawler = crawler{rc_pageData = Just nextPageData}
                 let newPage = pd_page nextPageData
                 return (newCrawler, newPage)
             Nothing -> do
                 pageData <- getPageData Link{l_text = Nothing, l_url = rc_startUrl crawler}
-                let newCrawler = crawler { rc_pageData = Just pageData }
+                let newCrawler = crawler{rc_pageData = Just pageData}
                 let newPage = pd_page pageData
                 return (newCrawler, newPage)
 
@@ -49,8 +49,8 @@ getPageData link =
         scraper = do
             title <- scrapeTitle
             links <- scrapeLinks
-            let page = Page { p_title = title, p_link = link }
-            return $ PageData { pd_page = page, pd_links = links }
+            let page = Page{p_title = title, p_link = link}
+            return $ PageData{pd_page = page, pd_links = links}
 
 getNextPage :: PageData -> IO Link
 getNextPage pageData = do
