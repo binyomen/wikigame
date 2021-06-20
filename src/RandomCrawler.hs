@@ -5,14 +5,14 @@ module RandomCrawler
     ) where
 
 import Crawler (Crawler, makeCrawler, nextPage)
-import Page (Page(..), fullUrl, scrapeTitle, scrapeLinks, convertMaybe)
+import Page (Link(..), Page(..), fullUrl, scrapeTitle, scrapeLinks, convertMaybe)
 
 import System.Random (randomRIO)
 import Text.HTML.Scalpel (URL, scrapeURL)
 
 data PageData = PageData
     { pd_page :: Page
-    , pd_links :: [(String, URL)]
+    , pd_links :: [Link]
     }
 
 data RandomCrawler = RandomCrawler
@@ -31,27 +31,28 @@ instance Crawler RandomCrawler where
                 let newPage = pd_page nextPageData
                 return (newCrawler, newPage)
             Nothing -> do
-                pageData <- getPageData Nothing (rc_startUrl crawler)
+                pageData <- getPageData Link{l_text = Nothing, l_url = rc_startUrl crawler}
                 let newCrawler = crawler { rc_pageData = Just pageData }
                 let newPage = pd_page pageData
                 return (newCrawler, newPage)
 
 getNextPageData :: PageData -> IO PageData
 getNextPageData pageData = do
-    (sourceLinkText, url) <- getNextPage pageData
-    getPageData (Just sourceLinkText) url
+    link <- getNextPage pageData
+    getPageData link
 
-getPageData :: Maybe String -> URL -> IO PageData
-getPageData sourceLinkText url =
+getPageData :: Link -> IO PageData
+getPageData link =
     scrapeURL (fullUrl url) scraper >>= convertMaybe url
     where
+        url = l_url link
         scraper = do
             title <- scrapeTitle
             links <- scrapeLinks
-            let page = Page { p_title = title, p_url = url, p_sourceLinkText = sourceLinkText }
+            let page = Page { p_title = title, p_link = link }
             return $ PageData { pd_page = page, pd_links = links }
 
-getNextPage :: PageData -> IO (String, URL)
+getNextPage :: PageData -> IO Link
 getNextPage pageData = do
     let links = pd_links pageData
     let len = length links

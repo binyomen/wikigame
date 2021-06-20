@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Page
-    ( Page(..)
+    ( Link(..)
+    , Page(..)
     , fullUrl
     , scrapeTitle
     , scrapeLinks
@@ -24,11 +25,15 @@ import Text.HTML.Scalpel
     , (@=)
     )
 
+data Link = Link
+    -- l_text is `Nothing` if this is the first page.
+    { l_text :: Maybe String
+    , l_url :: URL
+    }
+
 data Page = Page
     { p_title :: String
-    , p_url :: URL
-    -- The text of the link which led to this page. Just used for logging.
-    , p_sourceLinkText :: Maybe String
+    , p_link :: Link
     }
 
 fullUrl :: URL -> URL
@@ -37,17 +42,17 @@ fullUrl url = "https://en.wikipedia.org/wiki/" ++ url
 scrapeTitle :: Scraper String String
 scrapeTitle = text $ "h1" @: ["id" @= "firstHeading"]
 
-scrapeLinks :: Scraper String [(String, URL)]
+scrapeLinks :: Scraper String [Link]
 scrapeLinks =
     chroots
         (("div" @: ["id" @= "mw-content-text"]) // ("a" @: [match isWikipediaLink]))
         linkScraper
     where
-        linkScraper :: Scraper String (String, URL)
+        linkScraper :: Scraper String Link
         linkScraper = do
             linkText <- text anySelector
             linkUrl <- attr "href" anySelector
-            return (linkText, fromJust $ stripPrefix "/wiki/" linkUrl)
+            return Link{l_text = Just linkText, l_url = fromJust $ stripPrefix "/wiki/" linkUrl}
 
 scrapeContentText :: Scraper String String
 scrapeContentText =

@@ -4,7 +4,7 @@ module Lib
 
 import Crawler (Crawler, makeCrawler, nextPage)
 import NGramCrawler (NGramCrawler())
-import Page (Page(..))
+import Page (Link(..), Page(..))
 
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
@@ -38,11 +38,11 @@ gameLoop crawler currentUrl endUrl pagesVisited =
         return $ pagesVisited - 1
     else do
         (newCrawler, newPage) <- nextPage crawler
-        let sourceLinkText = getSourceLinkText (p_sourceLinkText newPage) ++ " -> "
+        let sourceLinkText = getSourceLinkText (l_text . p_link $ newPage) ++ " -> "
         let title = p_title newPage ++ " | "
-        let url = p_url newPage
+        let url = l_url . p_link $ newPage
         putStrLn $ addSpaces sourceLinkText ++ addSpaces title ++ url
-        gameLoop newCrawler (p_url newPage) endUrl $ pagesVisited + 1
+        gameLoop newCrawler url endUrl $ pagesVisited + 1
 
 getSourceLinkText :: Maybe String -> String
 getSourceLinkText = fromMaybe "<START_PAGE>"
