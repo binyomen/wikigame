@@ -53,7 +53,7 @@ instance Crawler NGramCrawler where
             , ngc_endUrl = endUrl
             , ngc_pageData = Nothing
             , ngc_endUrlModel = makeModel n True endUrlText
-            , ngc_indexedModels = map (flip (`makeModel` False) endUrlText) [1..10]
+            , ngc_indexedModels = map (flip (`makeModel` False) endUrlText) [1..maxIndexedModels]
             , ngc_urlScores = M.empty
             , ngc_visitedUrls = S.empty
             }
