@@ -16,7 +16,7 @@ import Data.Maybe (fromJust)
 import qualified Data.Map.Strict as M (empty, insert, lookup, union)
 import Data.Set (Set)
 import qualified Data.Set as S (insert, notMember, singleton)
-import Text.HTML.Scalpel (URL, scrapeURL)
+import Text.HTML.Scalpel (Scraper, scrapeURL, URL)
 
 -- The number of words for the n-gram model.
 n :: Word
@@ -121,10 +121,9 @@ getPageData crawler link = do
             let scraper = do
                     title <- scrapeTitle
                     links <- scrapeLinks
-                    return (title, links)
-            (title, links) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
-
-            score <- scoreLink crawler link
+                    score <- scrapeScore crawler links
+                    return (title, links, score)
+            (title, links, score) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
 
             let page = Page{p_title = title, p_link = link}
             let pageData = PageData{pd_page = page, pd_links = links, pd_score = score}
@@ -228,13 +227,12 @@ scoreLinkText crawler Link{l_text = linkText, l_url = url}
         indexedModel = ngc_indexedModels crawler !! fromIntegral (numWordsInLinkText - 1)
 
 -- Score the contents of the link.
-scoreLink :: NGramCrawler -> Link -> IO Double
-scoreLink crawler Link{l_url = url} =
-    scrapeURL (fullUrl url) scraper >>= convertMaybe url
+scrapeScore :: NGramCrawler -> [Link] -> Scraper String Double
+scrapeScore crawler links =
+    scraper
     where
         model = ngc_endUrlModel crawler
         scraper = do
-            links <- scrapeLinks
             if ngc_endUrl crawler `elem` map l_url links then
                 -- If the target page contains a link to the end URL,
                 -- it should have an infinity score.
