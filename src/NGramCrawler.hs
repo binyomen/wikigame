@@ -41,7 +41,7 @@ infinity = 1 / 0
 data PageData = PageData
     { pd_page :: Page
     , pd_links :: [Link]
-    , pd_content :: String
+    , pd_score :: Double
     }
 
 data ScoredLink = ScoredLink
@@ -66,8 +66,6 @@ data NGramCrawler = NGramCrawler
     -- A list of `maxIndexedModels` of n-gram models to be used on link text.
     -- The first is a 1-gram model, the second is a 2-gram model, etc.
     , ngc_indexedModels :: [NGramModel]
-    -- A cache of scores for encountered URLs.
-    , ngc_urlScoreCache :: Map URL Double
     -- A cache of page data for encountered URLs.
     , ngc_urlPageDataCache :: Map URL PageData
     -- A set of which URLs we have already visited.
@@ -84,7 +82,6 @@ instance Crawler NGramCrawler where
             , ngc_endUrlModel = makeModel n True endUrlText
             -- Create `maxIndexedModels` of n-gram models to be used on link text.
             , ngc_indexedModels = map (flip (`makeModel` False) endUrlText) [1..maxIndexedModels]
-            , ngc_urlScoreCache = M.empty
             , ngc_urlPageDataCache = M.empty
             , ngc_visitedUrls = S.singleton startUrl
             }
@@ -124,12 +121,13 @@ getPageData crawler link = do
             let scraper = do
                     title <- scrapeTitle
                     links <- scrapeLinks
-                    content <- scrapeContentText
-                    return (title, links, content)
-            (title, links, content) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
+                    return (title, links)
+            (title, links) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
+
+            score <- scoreLink crawler link
 
             let page = Page{p_title = title, p_link = link}
-            let pageData = PageData{pd_page = page, pd_links = links, pd_content = content}
+            let pageData = PageData{pd_page = page, pd_links = links, pd_score = score}
 
             let newUrlPageData = M.insert url pageData (ngc_urlPageDataCache crawler)
             return (pageData, crawler{ngc_urlPageDataCache = newUrlPageData})
@@ -168,27 +166,26 @@ dispatchToLinks crawler depth (firstLink : restLinks) = do
 
 mergeCrawlerCaches :: NGramCrawler -> NGramCrawler -> NGramCrawler
 mergeCrawlerCaches crawler1 crawler2 =
-    crawler1
-        { ngc_urlScoreCache = M.union (ngc_urlScoreCache crawler1) (ngc_urlScoreCache crawler2)
-        , ngc_urlPageDataCache = M.union (ngc_urlPageDataCache crawler1) (ngc_urlPageDataCache crawler2)
-        }
+    crawler1{ngc_urlPageDataCache = M.union (ngc_urlPageDataCache crawler1) (ngc_urlPageDataCache crawler2)}
 
 -- Get the best score under the given link using the given current depth.
 -- Returns an updated crawler.
 getBestScoreWithLookahead :: NGramCrawler -> Word -> Link -> IO (Double, NGramCrawler)
-getBestScoreWithLookahead crawler 0 link = scoreLink crawler link
+getBestScoreWithLookahead crawler 0 link = do
+    (pageData, crawler2) <- getPageData crawler link
+    return (pd_score pageData, crawler2)
+
 getBestScoreWithLookahead crawler depth link = do
-    (thisPageScore, crawler2) <- scoreLink crawler link
-    (pageData, crawler3) <- getPageData crawler2 link
-    let topLinks = getTopLinks crawler3 pageData
+    (pageData, crawler2) <- getPageData crawler link
+    let topLinks = getTopLinks crawler2 pageData
 
     -- Get the scores of links from this page.
-    (scoredLinks, crawler4) <- dispatchToLinks crawler3 (depth - 1) topLinks
+    (scoredLinks, crawler3) <- dispatchToLinks crawler2 (depth - 1) topLinks
 
-    let scoredLinksIncludingThis = ScoredLink{sl_link = link, sl_score = thisPageScore} : scoredLinks
+    let scoredLinksIncludingThis = ScoredLink{sl_link = link, sl_score = pd_score pageData} : scoredLinks
     let maxScore = sl_score $ maximum scoredLinksIncludingThis
 
-    return (maxScore, crawler4)
+    return (maxScore, crawler3)
 
 -- Get the top links on the given page based on their link text.
 getTopLinks :: NGramCrawler -> PageData -> [Link]
@@ -231,26 +228,21 @@ scoreLinkText crawler Link{l_text = linkText, l_url = url}
         indexedModel = ngc_indexedModels crawler !! fromIntegral (numWordsInLinkText - 1)
 
 -- Score the contents of the link.
-scoreLink :: NGramCrawler -> Link -> IO (Double, NGramCrawler)
-scoreLink crawler link =
-    case M.lookup url $ ngc_urlScoreCache crawler of
-        -- If we've already cached this URL, return the cached score.
-        Just score -> return (score, crawler)
-        Nothing -> do
-            let model = ngc_endUrlModel crawler
-            (pageData, crawler2) <- getPageData crawler link
-            let score = if ngc_endUrl crawler2 `elem` map l_url (pd_links pageData) then
-                    -- If the target page contains a link to the end URL, it
-                    -- should have an infinity score.
-                    infinity
-                else
-                    -- Otherwise just score the page's content.
-                    scoreText model (pd_content pageData)
-
-            let newUrlScores = M.insert url score (ngc_urlScoreCache crawler2)
-            return (score, crawler2{ngc_urlScoreCache = newUrlScores})
+scoreLink :: NGramCrawler -> Link -> IO Double
+scoreLink crawler Link{l_url = url} =
+    scrapeURL (fullUrl url) scraper >>= convertMaybe url
     where
-        url = l_url link
+        model = ngc_endUrlModel crawler
+        scraper = do
+            links <- scrapeLinks
+            if ngc_endUrl crawler `elem` map l_url links then
+                -- If the target page contains a link to the end URL,
+                -- it should have an infinity score.
+                return infinity
+            else do
+                -- Otherwise just score the page's content.
+                contentText <- scrapeContentText
+                return $ scoreText model contentText
 
 runIoOnThread :: IO a -> IO (MVar a)
 runIoOnThread io = do
