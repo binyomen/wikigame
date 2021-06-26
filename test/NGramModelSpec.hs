@@ -4,7 +4,7 @@ module NGramModelSpec (spec) where
 
 import NGramModel
 
-import Data.Map.Strict (Map); import qualified Data.Map.Strict as M
+import Data.HashMap.Strict (HashMap); import qualified Data.HashMap.Strict as M
 import Data.Text (Text); import qualified Data.Text as T
 
 import Test.Hspec
@@ -246,7 +246,7 @@ testWordMap :: (Word -> [Text] -> WordMap -> Bool) -> [Text] -> Word -> Bool
 testWordMap p text numPreceding =
     p numPreceding text $ constructMap numPreceding text
 
-foldMapWordMap :: ([a] -> b) -> (TextWord -> WordMap -> a) -> Map TextWord WordMap -> b
+foldMapWordMap :: ([a] -> b) -> (TextWord -> WordMap -> a) -> HashMap TextWord WordMap -> b
 foldMapWordMap f p m =
     f mappedList
     where

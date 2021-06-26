@@ -13,8 +13,9 @@ module NGramModel
 
 import MemSize (MemSize, memSize)
 
-import Data.Map.Strict (Map); import qualified Data.Map.Strict as M
-import Data.Set (Set); import qualified Data.Set as S
+import Data.Hashable (Hashable, hashWithSalt)
+import Data.HashMap.Strict (HashMap); import qualified Data.HashMap.Strict as M
+import Data.HashSet (HashSet); import qualified Data.HashSet as S
 import Data.Text (Text); import qualified Data.Text as T
 
 data TextWord =
@@ -38,6 +39,14 @@ instance Ord TextWord where
     (<=) (Literal s) (Literal t) = s <= t
     (<=) (Literal _) TextStart = False
 
+instance Hashable TextWord where
+    hashWithSalt salt TextStart =
+        hashWithSalt salt textStartAsText
+        where
+            textStartAsText :: Text
+            textStartAsText = "<TextStart>"
+    hashWithSalt salt (Literal t) = hashWithSalt salt t
+
 instance Show TextWord where
     show tw =
         case tw of
@@ -49,7 +58,7 @@ instance MemSize TextWord where
     memSize (Literal s) = memSize s
 
 data WordMap =
-    WordMap (Map TextWord WordMap) |
+    WordMap (HashMap TextWord WordMap) |
     Count Word
 
 instance Eq WordMap where
@@ -78,7 +87,7 @@ instance MemSize NGramModel where
     memSize NGramModel{ngm_n = n, ngm_smoothed = smoothed, ngm_data = dat} = memSize n + memSize smoothed + memSize dat
 
 -- taken from the NLTK: https://gist.github.com/sebleier/554280
-stopWords :: Set Text
+stopWords :: HashSet Text
 stopWords = S.fromList
     [ "i"
     , "me"
@@ -241,7 +250,7 @@ addToMap (Count c) (first : rest) =
 addToMap (Count c) [] = Count $ c + 1
 
 tokenize :: Text -> [Text]
-tokenize text = filter (`S.notMember` stopWords) $ T.words text
+tokenize text = filter (not . (`S.member` stopWords)) $ T.words text
 
 parse :: Word -> Text -> WordMap
 parse numPreceding =

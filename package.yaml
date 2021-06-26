@@ -22,11 +22,12 @@ description:         Please see the README on GitHub at <https://github.com/benw
 dependencies:
 - base >= 4.7 && < 5
 - containers
-- unordered-containers
+- hashable
 - random
 - scalpel
-- time
 - text
+- time
+- unordered-containers
 
 ghc-options:
 - -Wall
