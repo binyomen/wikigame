@@ -12,11 +12,11 @@ import Page (Link(..), Page(..), fullUrl, scrapeTitle, scrapeLinks, scrapeConten
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
 import Data.List (sortBy)
-import Data.Map.Strict (Map)
+import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromJust)
-import qualified Data.Map.Strict as M (empty, insert, lookup, union)
-import Data.Set (Set)
-import qualified Data.Set as S (insert, notMember, singleton)
+import qualified Data.HashMap.Strict as M (empty, insert, lookup, size, union)
+import Data.HashSet (HashSet)
+import qualified Data.HashSet as S (insert, member, singleton)
 import Text.HTML.Scalpel (Scraper, scrapeURL, URL)
 
 -- The number of words for the n-gram model.
@@ -68,9 +68,9 @@ data NGramCrawler = NGramCrawler
     -- The first is a 1-gram model, the second is a 2-gram model, etc.
     , ngc_indexedModels :: [NGramModel]
     -- A cache of page data for encountered URLs.
-    , ngc_urlPageDataCache :: Map URL PageData
+    , ngc_urlPageDataCache :: HashMap URL PageData
     -- A set of which URLs we have already visited.
-    , ngc_visitedUrls :: Set URL
+    , ngc_visitedUrls :: HashSet URL
     }
 
 instance MemSize PageData where
@@ -221,7 +221,7 @@ getTopLinks crawler pageData =
         sortedScoredLinkTexts = sortBy (flip compare) scoredLinkTexts
         sortedLinks = map sl_link sortedScoredLinkTexts
         -- Don't consider URLs we've already visited.
-        filteredLinks = filter ((`S.notMember` ngc_visitedUrls crawler) . l_url) sortedLinks
+        filteredLinks = filter (not . (`S.member` ngc_visitedUrls crawler) . l_url) sortedLinks
         topLinks = take (fromIntegral maxTopLinks) filteredLinks
 
 -- Get the content of the page identified by a given URL.

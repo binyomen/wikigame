@@ -7,6 +7,10 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M (mapAccumWithKey)
 import Data.Set (Set)
 import qualified Data.Set as S (elems)
+import Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM (foldlWithKey')
+import Data.HashSet (HashSet)
+import qualified Data.HashSet as HS (toList)
 
 -- A type class to help debug approximately how much memory a given type is using.
 class MemSize a where
@@ -25,7 +29,13 @@ instance (MemSize a, MemSize b) => MemSize (Map a b) where
     memSize m = fst $ M.mapAccumWithKey (\acc k v -> (acc + memSize k + memSize v, acc)) 0 m
 
 instance (MemSize a) => MemSize (Set a) where
-    memSize s = sum $ map memSize $ S.elems s
+    memSize s = memSize $ S.elems s
+
+instance (MemSize a, MemSize b) => MemSize (HashMap a b) where
+    memSize m = HM.foldlWithKey' (\acc k v -> acc + memSize k + memSize v) 0 m
+
+instance (MemSize a) => MemSize (HashSet a) where
+    memSize s = memSize $ HS.toList s
 
 instance MemSize Bool where
     memSize _ = 1
