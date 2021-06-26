@@ -1,7 +1,7 @@
 module Main (main) where
 
 import System.Environment (getArgs)
-import System.Exit (exitWith, ExitCode(..))
+import System.Exit (ExitCode(..), exitWith)
 
 import Lib (playGame)
 

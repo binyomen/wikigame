@@ -9,11 +9,10 @@ import NGramCrawler (NGramCrawler())
 import Page (Link(..), Page(..))
 
 import Data.Maybe (fromMaybe)
-import Data.Text (Text)
-import qualified Data.Text as T (append, pack, length, singleton, replicate, unpack)
-import Data.Time.Clock (getCurrentTime, diffUTCTime)
-import Text.HTML.Scalpel (URL)
+import Data.Text (Text); import qualified Data.Text as T
+import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import System.IO (hSetEncoding, stdout, utf8)
+import Text.HTML.Scalpel (URL)
 import Text.Printf (printf)
 
 playGame :: URL -> URL -> IO ()

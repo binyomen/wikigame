@@ -1,24 +1,21 @@
 module NGramCrawler
-    ( NGramCrawler
-    , makeCrawler
+    ( makeCrawler
     , nextPage
+    , NGramCrawler
     ) where
 
 import Crawler (Crawler, makeCrawler, nextPage)
 import MemSize (MemSize, memSize)
-import NGramModel (NGramModel, makeModel, scoreText)
-import Page (Link(..), Page(..), fullUrl, scrapeTitle, scrapeLinks, scrapeContentText, convertMaybe)
+import NGramModel (makeModel, NGramModel, scoreText)
+import Page (convertMaybe, fullUrl, Link(..), Page(..), scrapeContentText, scrapeLinks, scrapeTitle)
 
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
+import Data.HashMap.Strict (HashMap); import qualified Data.HashMap.Strict as M
+import Data.HashSet (HashSet); import qualified Data.HashSet as S
 import Data.List (sortBy)
-import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromJust)
-import qualified Data.HashMap.Strict as M (empty, insert, lookup, union)
-import Data.HashSet (HashSet)
-import qualified Data.HashSet as S (insert, member, singleton)
-import Data.Text (Text)
-import qualified Data.Text as T (words)
+import Data.Text (Text); import qualified Data.Text as T
 import Text.HTML.Scalpel (Scraper, scrapeURL, URL)
 
 -- The number of words for the n-gram model.

@@ -1,14 +1,14 @@
 module RandomCrawler
-    ( RandomCrawler
-    , makeCrawler
+    ( makeCrawler
     , nextPage
+    , RandomCrawler
     ) where
 
 import Crawler (Crawler, makeCrawler, nextPage)
-import Page (Link(..), Page(..), fullUrl, scrapeTitle, scrapeLinks, convertMaybe)
+import Page (convertMaybe, fullUrl, Link(..), Page(..), scrapeLinks, scrapeTitle)
 
 import System.Random (randomRIO)
-import Text.HTML.Scalpel (URL, scrapeURL)
+import Text.HTML.Scalpel (scrapeURL, URL)
 
 data PageData = PageData
     { pd_page :: Page

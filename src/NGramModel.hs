@@ -5,20 +5,17 @@
 module NGramModel where
 #else
 module NGramModel
-    ( NGramModel
-    , makeModel
+    ( makeModel
+    , NGramModel
     , scoreText
     ) where
 #endif
 
 import MemSize (MemSize, memSize)
 
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M (lookup, insert, empty, singleton, toList)
-import Data.Set (Set)
-import qualified Data.Set as S (fromList, notMember)
-import Data.Text (Text)
-import qualified Data.Text as T (unpack, words)
+import Data.Map.Strict (Map); import qualified Data.Map.Strict as M
+import Data.Set (Set); import qualified Data.Set as S
+import Data.Text (Text); import qualified Data.Text as T
 
 data TextWord =
     TextStart |

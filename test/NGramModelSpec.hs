@@ -4,10 +4,8 @@ module NGramModelSpec (spec) where
 
 import NGramModel
 
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M (empty, singleton, fromList, toList, null)
-import Data.Text (Text)
-import qualified Data.Text as T (singleton)
+import Data.Map.Strict (Map); import qualified Data.Map.Strict as M
+import Data.Text (Text); import qualified Data.Text as T
 
 import Test.Hspec
 import Test.QuickCheck

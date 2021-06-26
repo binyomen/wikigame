@@ -3,16 +3,11 @@ module MemSize
     , memSize
     ) where
 
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M (mapAccumWithKey)
-import Data.Set (Set)
-import qualified Data.Set as S (elems)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HM (foldlWithKey')
-import Data.HashSet (HashSet)
-import qualified Data.HashSet as HS (toList)
-import Data.Text (Text)
-import qualified Data.Text as T (length)
+import Data.HashMap.Strict (HashMap); import qualified Data.HashMap.Strict as HM
+import Data.HashSet (HashSet); import qualified Data.HashSet as HS
+import Data.Map.Strict (Map); import qualified Data.Map.Strict as M
+import Data.Set (Set); import qualified Data.Set as S
+import Data.Text (Text); import qualified Data.Text as T
 
 -- A type class to help debug approximately how much memory a given type is using.
 class MemSize a where

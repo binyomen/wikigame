@@ -1,33 +1,32 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Page
-    ( Link(..)
-    , Page(..)
+    ( convertMaybe
     , fullUrl
-    , scrapeTitle
-    , scrapeLinks
+    , Link(..)
+    , Page(..)
     , scrapeContentText
-    , convertMaybe
+    , scrapeLinks
+    , scrapeTitle
     ) where
 
 import MemSize (MemSize, memSize)
 
 import Data.List (isPrefixOf)
 import Data.Maybe (fromJust)
+import Data.Text (Text); import qualified Data.Text as T
 import Text.HTML.Scalpel
-    ( Scraper
-    , URL
-    , anySelector
-    , chroots
-    , attr
-    , match
-    , text
-    , (//)
+    ( (//)
     , (@:)
     , (@=)
+    , anySelector
+    , attr
+    , chroots
+    , match
+    , Scraper
+    , text
+    , URL
     )
-import Data.Text (Text)
-import qualified Data.Text as T (stripPrefix, unpack)
 
 data Link = Link
     -- l_text is `Nothing` if this is the first page.
