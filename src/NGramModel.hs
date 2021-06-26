@@ -40,11 +40,7 @@ instance Ord TextWord where
     (<=) (Literal _) TextStart = False
 
 instance Hashable TextWord where
-    hashWithSalt salt TextStart =
-        hashWithSalt salt textStartAsText
-        where
-            textStartAsText :: Text
-            textStartAsText = "<TextStart>"
+    hashWithSalt salt TextStart = hashWithSalt salt ("<TextStart>" :: Text)
     hashWithSalt salt (Literal t) = hashWithSalt salt t
 
 instance Show TextWord where
