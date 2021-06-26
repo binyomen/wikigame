@@ -1,9 +1,13 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module NGramModelSpec (spec) where
 
 import NGramModel
 
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M (empty, singleton, fromList, toList, null)
+import Data.Text (Text)
+import qualified Data.Text as T (singleton)
 
 import Test.Hspec
 import Test.QuickCheck
@@ -16,11 +20,15 @@ spec = do
 emptyMap :: WordMap
 emptyMap = WordMap M.empty
 
-kvpm :: String -> [(TextWord, WordMap)] -> (TextWord, WordMap)
+kvpm :: Text -> [(TextWord, WordMap)] -> (TextWord, WordMap)
 kvpm k v = (Literal k, WordMap . M.fromList $ v)
 
-kvpc :: String -> Word -> (TextWord, WordMap)
+kvpc :: Text -> Word -> (TextWord, WordMap)
 kvpc k v = (Literal k, Count v)
+
+textWordToText :: TextWord -> Text
+textWordToText TextStart = "<TextStart>"
+textWordToText (Literal t) = t
 
 fullMap :: WordMap
 fullMap =
@@ -215,28 +223,28 @@ testAddToMap = parallel $
                             ]
                         ])
 
-lexicon :: [String]
-lexicon = map (:[]) ['a'..'z']
+lexicon :: [Text]
+lexicon = map T.singleton ['a'..'z']
 
-genWord :: Gen String
+genWord :: Gen Text
 genWord = do
     i <- choose (0, length lexicon - 1)
     return $ lexicon!!i
 
-textGen :: Bool -> Gen [String]
+textGen :: Bool -> Gen [Text]
 textGen allowEmptyLists = do
     size <- getSize
     l <- choose (0, size)
     let l' = if allowEmptyLists then l else l + 1
     vectorOf l' genWord
 
-forAllTexts :: ([String] -> Word -> Bool) -> Property
+forAllTexts :: ([Text] -> Word -> Bool) -> Property
 forAllTexts = forAll $ textGen True
 
-forAllNonEmptyTexts :: ([String] -> Word -> Bool) -> Property
+forAllNonEmptyTexts :: ([Text] -> Word -> Bool) -> Property
 forAllNonEmptyTexts = forAll $ textGen False
 
-testWordMap :: (Word -> [String] -> WordMap -> Bool) -> [String] -> Word -> Bool
+testWordMap :: (Word -> [Text] -> WordMap -> Bool) -> [Text] -> Word -> Bool
 testWordMap p text numPreceding =
     p numPreceding text $ constructMap numPreceding text
 
@@ -247,7 +255,7 @@ foldMapWordMap f p m =
         asList = M.toList m
         mappedList = map (uncurry p) asList
 
-noEmptyMaps :: Word -> [String] -> WordMap -> Bool
+noEmptyMaps :: Word -> [Text] -> WordMap -> Bool
 noEmptyMaps numPreceding text (WordMap m) =
     M.null m || -- the root being null is OK
     foldMapWordMap and mapChildren m
@@ -255,7 +263,7 @@ noEmptyMaps numPreceding text (WordMap m) =
         mapChildren _ = noEmptyMapsRecurse numPreceding text
 noEmptyMaps _ _ (Count _) = True
 
-noEmptyMapsRecurse :: Word -> [String] -> WordMap -> Bool
+noEmptyMapsRecurse :: Word -> [Text] -> WordMap -> Bool
 noEmptyMapsRecurse numPreceding text (WordMap m) =
     not (M.null m) &&
     foldMapWordMap and mapChildren m
@@ -263,33 +271,33 @@ noEmptyMapsRecurse numPreceding text (WordMap m) =
         mapChildren _ = noEmptyMapsRecurse numPreceding text
 noEmptyMapsRecurse _ _ (Count _) = True
 
-depthValid :: Word -> [String] -> WordMap -> Bool
+depthValid :: Word -> [Text] -> WordMap -> Bool
 depthValid numPreceding = depthValidRecurse (fromIntegral numPreceding)
 
-depthValidRecurse :: Int -> [String] -> WordMap -> Bool
+depthValidRecurse :: Int -> [Text] -> WordMap -> Bool
 depthValidRecurse numPreceding text (WordMap m) =
     foldMapWordMap and mapChildren m
     where
         mapChildren _ = depthValidRecurse (numPreceding - 1) text
 depthValidRecurse numPreceding _ (Count _) = numPreceding == -1
 
-noCount0 :: Word -> [String] -> WordMap -> Bool
+noCount0 :: Word -> [Text] -> WordMap -> Bool
 noCount0 numPreceding text (WordMap m) =
     foldMapWordMap and mapChildren m
     where
         mapChildren _ = noCount0 numPreceding text
 noCount0 _ _ (Count c) = c /= 0
 
-allWordsInSourceText :: Word -> [String] -> WordMap -> Bool
+allWordsInSourceText :: Word -> [Text] -> WordMap -> Bool
 allWordsInSourceText numPreceding text (WordMap m) =
     foldMapWordMap and mapChildren m
     where
         mapChildren key value =
-            (show key `elem` text || show key == "<TextStart>") &&
+            (textWordToText key `elem` text || textWordToText key == "<TextStart>") &&
             allWordsInSourceText numPreceding text value
 allWordsInSourceText _ _ (Count _) = True
 
-totalCountEqualsTextLength :: Word -> [String] -> WordMap -> Bool
+totalCountEqualsTextLength :: Word -> [Text] -> WordMap -> Bool
 totalCountEqualsTextLength _ text wm =
     getTotalCount wm == fromIntegral (length text)
 
@@ -300,7 +308,7 @@ getTotalCount (WordMap m) =
         mapChildren _ = getTotalCount
 getTotalCount (Count c) = c
 
-totalTextStartNodesEqualsNumPreceding :: Word -> [String] -> WordMap -> Bool
+totalTextStartNodesEqualsNumPreceding :: Word -> [Text] -> WordMap -> Bool
 totalTextStartNodesEqualsNumPreceding numPreceding _ wm =
     getTotalTextStartNodes wm == fromIntegral numPreceding
 

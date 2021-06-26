@@ -12,7 +12,7 @@ module Page
 
 import MemSize (MemSize, memSize)
 
-import Data.List (isPrefixOf, stripPrefix)
+import Data.List (isPrefixOf)
 import Data.Maybe (fromJust)
 import Text.HTML.Scalpel
     ( Scraper
@@ -26,10 +26,12 @@ import Text.HTML.Scalpel
     , (@:)
     , (@=)
     )
+import Data.Text (Text)
+import qualified Data.Text as T (stripPrefix, unpack)
 
 data Link = Link
     -- l_text is `Nothing` if this is the first page.
-    { l_text :: Maybe String
+    { l_text :: Maybe Text
     , l_url :: URL
     }
 
@@ -37,7 +39,7 @@ instance MemSize Link where
     memSize Link{l_text = t, l_url = url} = memSize t + memSize url
 
 data Page = Page
-    { p_title :: String
+    { p_title :: Text
     , p_link :: Link
     }
 
@@ -47,23 +49,23 @@ instance MemSize Page where
 fullUrl :: URL -> URL
 fullUrl url = "https://en.wikipedia.org/wiki/" ++ url
 
-scrapeTitle :: Scraper String String
+scrapeTitle :: Scraper Text Text
 scrapeTitle = text $ "h1" @: ["id" @= "firstHeading"]
 
-scrapeLinks :: Scraper String [Link]
+scrapeLinks :: Scraper Text [Link]
 scrapeLinks =
     chroots
         (("div" @: ["id" @= "mw-content-text"]) // ("a" @: [match isWikipediaLink]))
         linkScraper
     where
-        linkScraper :: Scraper String Link
+        linkScraper :: Scraper Text Link
         linkScraper = do
             linkText <- text anySelector
             linkUrl <- attr "href" anySelector
-            let strippedUrl = fromJust $ stripPrefix "/wiki/" linkUrl
+            let strippedUrl = T.unpack $ fromJust $ T.stripPrefix "/wiki/" linkUrl
             linkText `seq` strippedUrl `seq` return Link{l_text = Just linkText, l_url = strippedUrl}
 
-scrapeContentText :: Scraper String String
+scrapeContentText :: Scraper Text Text
 scrapeContentText =
     text $ "div" @: ["id" @= "mw-content-text"]
 

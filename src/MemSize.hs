@@ -11,6 +11,8 @@ import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM (foldlWithKey')
 import Data.HashSet (HashSet)
 import qualified Data.HashSet as HS (toList)
+import Data.Text (Text)
+import qualified Data.Text as T (length)
 
 -- A type class to help debug approximately how much memory a given type is using.
 class MemSize a where
@@ -36,6 +38,9 @@ instance (MemSize a, MemSize b) => MemSize (HashMap a b) where
 
 instance (MemSize a) => MemSize (HashSet a) where
     memSize s = memSize $ HS.toList s
+
+instance MemSize Text where
+    memSize t = fromIntegral $ T.length t
 
 instance MemSize Bool where
     memSize _ = 1

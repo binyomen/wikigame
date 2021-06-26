@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 #ifdef TEST
 module NGramModel where
@@ -16,10 +17,12 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M (lookup, insert, empty, singleton, toList)
 import Data.Set (Set)
 import qualified Data.Set as S (fromList, notMember)
+import Data.Text (Text)
+import qualified Data.Text as T (unpack, words)
 
 data TextWord =
     TextStart |
-    Literal String
+    Literal Text
 
 instance Eq TextWord where
     (==) TextStart (Literal _) = False
@@ -42,7 +45,7 @@ instance Show TextWord where
     show tw =
         case tw of
             TextStart -> "<TextStart>"
-            Literal s -> s
+            Literal s -> T.unpack s
 
 instance MemSize TextWord where
     memSize TextStart = 0
@@ -78,7 +81,7 @@ instance MemSize NGramModel where
     memSize NGramModel{ngm_n = n, ngm_smoothed = smoothed, ngm_data = dat} = memSize n + memSize smoothed + memSize dat
 
 -- taken from the NLTK: https://gist.github.com/sebleier/554280
-stopWords :: Set String
+stopWords :: Set Text
 stopWords = S.fromList
     [ "i"
     , "me"
@@ -209,15 +212,15 @@ stopWords = S.fromList
     , "now"
     ]
 
-makeModel :: Word -> Bool -> String -> NGramModel
+makeModel :: Word -> Bool -> Text -> NGramModel
 makeModel n smoothed text =
     NGramModel{ngm_n = n, ngm_smoothed = smoothed, ngm_data = parse (n - 1) text}
 
-constructMap :: Word -> [String] -> WordMap
+constructMap :: Word -> [Text] -> WordMap
 constructMap numPreceding =
     constructMapRecurse $ replicate (fromIntegral numPreceding) TextStart
 
-constructMapRecurse :: [TextWord] -> [String] -> WordMap
+constructMapRecurse :: [TextWord] -> [Text] -> WordMap
 constructMapRecurse preceding (first : rest) =
     addToMap restMap wordList
     where
@@ -240,14 +243,14 @@ addToMap (Count c) (first : rest) =
         subMap = addToMap (Count c) rest
 addToMap (Count c) [] = Count $ c + 1
 
-tokenize :: String -> [String]
-tokenize text = filter (`S.notMember` stopWords) $ words text
+tokenize :: Text -> [Text]
+tokenize text = filter (`S.notMember` stopWords) $ T.words text
 
-parse :: Word -> String -> WordMap
+parse :: Word -> Text -> WordMap
 parse numPreceding =
     constructMap numPreceding . tokenize
 
-scoreText :: NGramModel -> String -> Double
+scoreText :: NGramModel -> Text -> Double
 scoreText model text =
     sum wordScores
     where
@@ -256,7 +259,7 @@ scoreText model text =
         initialPreceding = replicate (fromIntegral numPreceding) TextStart
         wordScores = scoreWords model tokens initialPreceding
 
-scoreWords :: NGramModel -> [String] -> [TextWord] -> [Double]
+scoreWords :: NGramModel -> [Text] -> [TextWord] -> [Double]
 scoreWords model (first : rest) preceding =
     scoreWord model first preceding :
         scoreWords model rest nextPreceding
@@ -264,7 +267,7 @@ scoreWords model (first : rest) preceding =
         nextPreceding = tail $ preceding ++ [Literal first]
 scoreWords _ [] _ = []
 
-scoreWord :: NGramModel -> String -> [TextWord] -> Double
+scoreWord :: NGramModel -> Text -> [TextWord] -> Double
 scoreWord model word preceding =
     log probability
     where

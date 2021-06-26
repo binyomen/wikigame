@@ -17,6 +17,8 @@ import Data.Maybe (fromJust)
 import qualified Data.HashMap.Strict as M (empty, insert, lookup, union)
 import Data.HashSet (HashSet)
 import qualified Data.HashSet as S (insert, member, singleton)
+import Data.Text (Text)
+import qualified Data.Text as T (words)
 import Text.HTML.Scalpel (Scraper, scrapeURL, URL)
 
 -- The number of words for the n-gram model.
@@ -225,7 +227,7 @@ getTopLinks crawler pageData =
         topLinks = take (fromIntegral maxTopLinks) filteredLinks
 
 -- Get the content of the page identified by a given URL.
-getUrlContentText :: URL -> IO String
+getUrlContentText :: URL -> IO Text
 getUrlContentText url =
     scrapeURL (fullUrl url) scrapeContentText >>= convertMaybe url
 
@@ -244,11 +246,11 @@ scoreLinkText crawler Link{l_text = linkText, l_url = url}
     where
         -- `linkText` shouldn't be `Nothing` here. If it is, throw.
         notMaybeLinkText = fromJust linkText
-        numWordsInLinkText = fromIntegral $ length $ words notMaybeLinkText
+        numWordsInLinkText = fromIntegral $ length $ T.words notMaybeLinkText
         indexedModel = ngc_indexedModels crawler !! fromIntegral (numWordsInLinkText - 1)
 
 -- Score the contents of the link.
-scrapeScore :: NGramCrawler -> [Link] -> Scraper String Double
+scrapeScore :: NGramCrawler -> [Link] -> Scraper Text Double
 scrapeScore crawler links =
     scraper
     where

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Lib
     ( playGame
     ) where
@@ -7,6 +9,8 @@ import NGramCrawler (NGramCrawler())
 import Page (Link(..), Page(..))
 
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
+import qualified Data.Text as T (append, pack, length, singleton, replicate, unpack)
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import Text.HTML.Scalpel (URL)
 import System.IO (hSetEncoding, stdout, utf8)
@@ -38,23 +42,23 @@ gameLoop crawler currentUrl endUrl pagesVisited =
         return $ pagesVisited - 1
     else do
         (newCrawler, newPage) <- nextPage crawler
-        let sourceLinkText = getSourceLinkText (l_text . p_link $ newPage) ++ " -> "
-        let title = p_title newPage ++ " | "
+        let sourceLinkText = getSourceLinkText (l_text . p_link $ newPage) `T.append` " -> "
+        let title = p_title newPage `T.append` " | "
         let url = l_url . p_link $ newPage
-        putStrLn $ addSpaces sourceLinkText ++ addSpaces title ++ url
+        putStrLn $ T.unpack $ addSpaces sourceLinkText `T.append` addSpaces title `T.append` T.pack url
         gameLoop newCrawler url endUrl $ pagesVisited + 1
 
-getSourceLinkText :: Maybe String -> String
+getSourceLinkText :: Maybe Text -> Text
 getSourceLinkText = fromMaybe "<START_PAGE>"
 
 columnLength :: Int
 columnLength = 60
 
-addSpaces :: String -> String
-addSpaces s =
+addSpaces :: Text -> Text
+addSpaces t =
     if len < columnLength then
-        s ++ replicate (columnLength - len) ' '
+        t `T.append` T.replicate (columnLength - len) (T.singleton ' ')
     else
-        s
+        t
     where
-        len = length s
+        len = T.length t
