@@ -14,7 +14,7 @@ import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
 import Data.List (sortBy)
 import Data.HashMap.Strict (HashMap)
 import Data.Maybe (fromJust)
-import qualified Data.HashMap.Strict as M (empty, insert, lookup, size, union)
+import qualified Data.HashMap.Strict as M (empty, insert, lookup, union)
 import Data.HashSet (HashSet)
 import qualified Data.HashSet as S (insert, member, singleton)
 import Text.HTML.Scalpel (Scraper, scrapeURL, URL)
@@ -34,7 +34,7 @@ maxIndexedModels = 10
 
 -- The number of pages to look ahead by when determining the best next link.
 lookahead :: Word
-lookahead = 1
+lookahead = 2
 
 infinity :: Double
 infinity = 1 / 0
@@ -143,7 +143,7 @@ getPageData crawler link = do
                     title <- scrapeTitle
                     links <- scrapeLinks
                     score <- scrapeScore crawler links
-                    return (title, links, score)
+                    title `seq` links `seq` score `seq` return (title, links, score)
             (title, links, score) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
 
             let page = Page{p_title = title, p_link = link}

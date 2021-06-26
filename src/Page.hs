@@ -60,7 +60,8 @@ scrapeLinks =
         linkScraper = do
             linkText <- text anySelector
             linkUrl <- attr "href" anySelector
-            return Link{l_text = Just linkText, l_url = fromJust $ stripPrefix "/wiki/" linkUrl}
+            let strippedUrl = fromJust $ stripPrefix "/wiki/" linkUrl
+            linkText `seq` strippedUrl `seq` return Link{l_text = Just linkText, l_url = strippedUrl}
 
 scrapeContentText :: Scraper String String
 scrapeContentText =
