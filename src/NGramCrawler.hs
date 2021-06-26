@@ -5,6 +5,7 @@ module NGramCrawler
     ) where
 
 import Crawler (Crawler, makeCrawler, nextPage)
+import MemSize (MemSize, memSize)
 import NGramModel (NGramModel, makeModel, scoreText)
 import Page (Link(..), Page(..), fullUrl, scrapeTitle, scrapeLinks, scrapeContentText, convertMaybe)
 
@@ -71,6 +72,26 @@ data NGramCrawler = NGramCrawler
     -- A set of which URLs we have already visited.
     , ngc_visitedUrls :: Set URL
     }
+
+instance MemSize PageData where
+    memSize PageData{pd_page = page, pd_links = links, pd_score = score} = memSize page + memSize links + memSize score
+
+instance MemSize NGramCrawler where
+    memSize NGramCrawler
+        { ngc_startUrl = startUrl
+        , ngc_endUrl = endUrl
+        , ngc_pageData = pageData
+        , ngc_endUrlModel = endUrlModel
+        , ngc_indexedModels = indexedModels
+        , ngc_urlPageDataCache = urlPageDataCache
+        , ngc_visitedUrls = visitedUrls
+        } = memSize startUrl +
+            memSize endUrl +
+            memSize pageData +
+            memSize endUrlModel +
+            memSize indexedModels +
+            memSize urlPageDataCache +
+            memSize visitedUrls
 
 instance Crawler NGramCrawler where
     makeCrawler startUrl endUrl = do

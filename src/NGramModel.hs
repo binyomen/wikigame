@@ -10,6 +10,8 @@ module NGramModel
     ) where
 #endif
 
+import MemSize (MemSize, memSize)
+
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M (lookup, insert, empty, singleton, toList)
 import Data.Set (Set)
@@ -42,6 +44,10 @@ instance Show TextWord where
             TextStart -> "<TextStart>"
             Literal s -> s
 
+instance MemSize TextWord where
+    memSize TextStart = 0
+    memSize (Literal s) = memSize s
+
 data WordMap =
     WordMap (Map TextWord WordMap) |
     Count Word
@@ -58,11 +64,18 @@ instance Show WordMap where
             WordMap m -> show m
             Count i -> show i
 
+instance MemSize WordMap where
+    memSize (WordMap m) = memSize m
+    memSize (Count c) = memSize c
+
 data NGramModel = NGramModel
     { ngm_n :: Word
     , ngm_smoothed :: Bool
     , ngm_data :: WordMap
     }
+
+instance MemSize NGramModel where
+    memSize NGramModel{ngm_n = n, ngm_smoothed = smoothed, ngm_data = dat} = memSize n + memSize smoothed + memSize dat
 
 -- taken from the NLTK: https://gist.github.com/sebleier/554280
 stopWords :: Set String

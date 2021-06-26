@@ -10,6 +10,8 @@ module Page
     , convertMaybe
     ) where
 
+import MemSize (MemSize, memSize)
+
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe (fromJust)
 import Text.HTML.Scalpel
@@ -31,10 +33,16 @@ data Link = Link
     , l_url :: URL
     }
 
+instance MemSize Link where
+    memSize Link{l_text = t, l_url = url} = memSize t + memSize url
+
 data Page = Page
     { p_title :: String
     , p_link :: Link
     }
+
+instance MemSize Page where
+    memSize Page{p_title = title, p_link = link} = memSize title + memSize link
 
 fullUrl :: URL -> URL
 fullUrl url = "https://en.wikipedia.org/wiki/" ++ url
