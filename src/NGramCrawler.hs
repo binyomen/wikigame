@@ -236,14 +236,14 @@ scoreLinkText crawler Link{l_text = linkText, l_url = url}
     | url == ngc_endUrl crawler = infinity
     -- If we are able to score the link text using one of our indexed models,
     -- do that.
-    | numWordsInLinkText <= maxIndexedModels = scoreText indexedModel notMaybeLinkText
+    | numWordsInLinkText > 0 && numWordsInLinkText <= maxIndexedModels = scoreText indexedModel strippedLinkText
     -- If the link text has too many words to be scored with our indexed
     -- models, return a 0 score.
     | otherwise = 0
     where
         -- `linkText` shouldn't be `Nothing` here. If it is, throw.
-        notMaybeLinkText = fromJust linkText
-        numWordsInLinkText = fromIntegral $ length $ T.words notMaybeLinkText
+        strippedLinkText = T.strip $ fromJust linkText
+        numWordsInLinkText = fromIntegral $ length $ T.words strippedLinkText
         indexedModel = ngc_indexedModels crawler !! fromIntegral (numWordsInLinkText - 1)
 
 -- Score the contents of the link.
