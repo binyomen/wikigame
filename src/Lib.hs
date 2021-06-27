@@ -7,22 +7,21 @@ module Lib
 import Crawler (Crawler, makeCrawler, nextPage)
 import NGramCrawler (NGramCrawler())
 import Page (Link(..), Page(..))
+import RandomCrawler (RandomCrawler())
 
 import Data.Maybe (fromMaybe)
 import Data.Text (Text); import qualified Data.Text as T
-import Data.Time.Clock (diffUTCTime, getCurrentTime)
+import Data.Time.Clock (diffUTCTime, getCurrentTime, UTCTime)
 import System.IO (hSetEncoding, stdout, utf8)
 import Text.HTML.Scalpel (URL)
 import Text.Printf (printf)
 
-playGame :: URL -> URL -> IO ()
-playGame startUrl endUrl = do
+playGame :: URL -> URL -> String -> IO ()
+playGame startUrl endUrl crawlerName = do
     hSetEncoding stdout utf8
     putStrLn $ "Playing the Wikipedia game from " ++ startUrl ++ " to " ++ endUrl ++ "\n"
 
-    crawler <- makeCrawler startUrl endUrl :: IO NGramCrawler
-    startTime <- getCurrentTime
-    hops <- gameLoop crawler startUrl endUrl 0
+    (startTime, hops) <- runLoopBasedOnCrawlerName startUrl endUrl crawlerName
     endTime <- getCurrentTime
 
     putStrLn "\n"
@@ -34,6 +33,27 @@ playGame startUrl endUrl = do
     let seconds = totalSeconds - (fromIntegral minutes * 60)
 
     printf  "            %dm%0.3fs (%0.3fs)\n" minutes seconds totalSeconds
+
+runLoopBasedOnCrawlerName :: URL -> URL -> String -> IO (UTCTime, Word)
+runLoopBasedOnCrawlerName startUrl endUrl name =
+    case name of
+        "random" -> runLoopOnRandomCrawler startUrl endUrl
+        "ngram" -> runLoopOnNgramCrawler startUrl endUrl
+        _ -> error "Invalid crawler name."
+
+runLoopOnRandomCrawler :: URL -> URL -> IO (UTCTime, Word)
+runLoopOnRandomCrawler startUrl endUrl = do
+    crawler <- makeCrawler startUrl endUrl :: IO RandomCrawler
+    startTime <- getCurrentTime
+    hops <- gameLoop crawler startUrl endUrl 0
+    return (startTime, hops)
+
+runLoopOnNgramCrawler :: URL -> URL -> IO (UTCTime, Word)
+runLoopOnNgramCrawler startUrl endUrl = do
+    crawler <- makeCrawler startUrl endUrl :: IO NGramCrawler
+    startTime <- getCurrentTime
+    hops <- gameLoop crawler startUrl endUrl 0
+    return (startTime, hops)
 
 gameLoop :: Crawler a => a -> URL -> URL -> Word -> IO Word
 gameLoop crawler currentUrl endUrl pagesVisited =

@@ -9,11 +9,11 @@ import Lib (playGame)
 main :: IO ()
 main = do
     args <- getArgs
-    (startUrl, endUrl) <- parse args
-    playGame startUrl endUrl
+    (crawlerName, startUrl, endUrl) <- parse args
+    playGame startUrl endUrl crawlerName
 
-parse :: [String] -> IO (String, String)
-parse [arg1, arg2] = return (arg1, arg2)
+parse :: [String] -> IO (String, String, String)
+parse [arg1, arg2, arg3] = return (arg1, arg2, arg3)
 parse _ = do
     putStrLn "Invalid args"
     exitWith $ ExitFailure 1
