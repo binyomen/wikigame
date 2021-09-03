@@ -7,7 +7,7 @@ module NGramCrawler
 import Crawler (Crawler, makeCrawler, nextPage)
 import MemSize (MemSize, memSize)
 import NGramModel (makeModel, NGramModel, scoreText)
-import Page (convertMaybe, fullUrl, Link(..), Page(..), scrapeContentText, scrapeLinks, scrapeTitle)
+import Page (convertMaybe, fullUrl, getUrlContentText, Link(..), Page(..), scrapeContentText, scrapeLinks, scrapeTitle)
 
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (MVar, newEmptyMVar, putMVar, takeMVar)
@@ -222,11 +222,6 @@ getTopLinks crawler pageData =
         -- Don't consider URLs we've already visited.
         filteredLinks = filter (not . (`S.member` ngc_visitedUrls crawler) . l_url) sortedLinks
         topLinks = take (fromIntegral maxTopLinks) filteredLinks
-
--- Get the content of the page identified by a given URL.
-getUrlContentText :: URL -> IO Text
-getUrlContentText url =
-    scrapeURL (fullUrl url) scrapeContentText >>= convertMaybe url
 
 -- Score the text of the given link.
 scoreLinkText :: NGramCrawler -> Link -> Double

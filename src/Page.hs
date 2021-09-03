@@ -3,6 +3,7 @@
 module Page
     ( convertMaybe
     , fullUrl
+    , getUrlContentText
     , Link(..)
     , Page(..)
     , scrapeContentText
@@ -24,6 +25,7 @@ import Text.HTML.Scalpel
     , chroots
     , match
     , Scraper
+    , scrapeURL
     , text
     , URL
     )
@@ -76,6 +78,11 @@ isWikipediaLink key value =
             notElem ':' value &&
             notElem '#' value
         _ -> False
+
+-- Get the content of the page identified by a given URL.
+getUrlContentText :: URL -> IO Text
+getUrlContentText url =
+    scrapeURL (fullUrl url) scrapeContentText >>= convertMaybe url
 
 convertMaybe :: URL -> Maybe a -> IO a
 convertMaybe _ (Just v) = return v

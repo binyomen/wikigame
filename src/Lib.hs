@@ -4,6 +4,7 @@ module Lib
     ( playGame
     ) where
 
+import BacktrackingCrawler (BacktrackingCrawler())
 import Crawler (Crawler, makeCrawler, nextPage)
 import NGramCrawler (NGramCrawler())
 import Page (Link(..), Page(..))
@@ -38,19 +39,27 @@ runLoopBasedOnCrawlerName :: URL -> URL -> String -> IO (UTCTime, Word)
 runLoopBasedOnCrawlerName startUrl endUrl name =
     case name of
         "random" -> runLoopOnRandomCrawler startUrl endUrl
-        "ngram" -> runLoopOnNgramCrawler startUrl endUrl
+        "ngram" -> runLoopOnNGramCrawler startUrl endUrl
+        "backtracking" -> runLoopOnBacktrackingCrawler startUrl endUrl
         _ -> error "Invalid crawler name."
 
 runLoopOnRandomCrawler :: URL -> URL -> IO (UTCTime, Word)
 runLoopOnRandomCrawler startUrl endUrl = do
     crawler <- makeCrawler startUrl endUrl :: IO RandomCrawler
-    startTime <- getCurrentTime
-    hops <- gameLoop crawler startUrl endUrl 0
-    return (startTime, hops)
+    runLoop crawler startUrl endUrl
 
-runLoopOnNgramCrawler :: URL -> URL -> IO (UTCTime, Word)
-runLoopOnNgramCrawler startUrl endUrl = do
+runLoopOnNGramCrawler :: URL -> URL -> IO (UTCTime, Word)
+runLoopOnNGramCrawler startUrl endUrl = do
     crawler <- makeCrawler startUrl endUrl :: IO NGramCrawler
+    runLoop crawler startUrl endUrl
+
+runLoopOnBacktrackingCrawler :: URL -> URL -> IO (UTCTime, Word)
+runLoopOnBacktrackingCrawler startUrl endUrl = do
+    crawler <- makeCrawler startUrl endUrl :: IO BacktrackingCrawler
+    runLoop crawler startUrl endUrl
+
+runLoop :: Crawler a => a -> URL -> URL -> IO (UTCTime, Word)
+runLoop crawler startUrl endUrl = do
     startTime <- getCurrentTime
     hops <- gameLoop crawler startUrl endUrl 0
     return (startTime, hops)
