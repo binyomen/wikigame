@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+import subprocess
+import sys
+
+WILDCARD_KEY = '*'
+RANDOM_KEY = 'random'
+NGRAM_KEY = 'ngram'
+BACKTRACKING_KEY = 'backtracking'
+
+solved_paths = [
+    ('Boston_Red_Sox', 'Oakland_Athletics', [NGRAM_KEY, BACKTRACKING_KEY]),
+    ('Boston_Red_Sox', 'Baseball_in_Japan', []),
+    ('Boston_Red_Sox', 'Basketball', [NGRAM_KEY, BACKTRACKING_KEY]),
+]
+
+def validateArg(arg):
+    if arg != WILDCARD_KEY and arg != RANDOM_KEY and arg != NGRAM_KEY and arg != BACKTRACKING_KEY:
+        raise Exception('Invalid crawler name.')
+
+def runCrawlerOnPath(crawlerName, pathStart, pathEnd):
+    print('Running the ' + crawlerName + ' crawler.')
+    subprocess.run(['stack', 'run', crawlerName, pathStart, pathEnd])
+
+def runCrawlerExamples(crawlerName):
+    for path in solved_paths:
+        if crawlerName == WILDCARD_KEY:
+            for crawler in path[2]:
+                runCrawlerOnPath(crawler, path[0], path[1])
+        elif crawlerName in path[2]:
+            runCrawlerOnPath(crawlerName, path[0], path[1])
+
+def main():
+    if len(sys.argv) != 2:
+        raise Exception('Should provide one (1) argument, which is a crawler name.')
+    else:
+        crawlerName = sys.argv[1]
+        validateArg(crawlerName)
+        runCrawlerExamples(crawlerName)
+
+if __name__ == '__main__':
+    main()
