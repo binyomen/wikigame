@@ -145,7 +145,7 @@ getPageData crawler link = do
             let scraper = do
                     title <- scrapeTitle
                     links <- scrapeLinks
-                    score <- scrapeScore crawler links
+                    score <- scrapeScore crawler url links
                     title `seq` links `seq` score `seq` return (title, links, score)
             (title, links, score) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
 
@@ -227,14 +227,17 @@ scoreLinkText crawler Link{l_text = linkText, l_url = url}
         numWordsInLinkText = fromIntegral $ length $ T.words strippedLinkText
         indexedModel = btc_indexedModels crawler !! fromIntegral (numWordsInLinkText - 1)
 
--- Score the contents of the link.
-scrapeScore :: BacktrackingCrawler -> [Link] -> Scraper Text Double
-scrapeScore crawler links =
+-- Score the contents of the list of links from the given URL.
+scrapeScore :: BacktrackingCrawler -> URL -> [Link] -> Scraper Text Double
+scrapeScore crawler url links =
     scraper
     where
         model = btc_endUrlModel crawler
         scraper = do
-            if btc_endUrl crawler `elem` map l_url links then
+            if url == btc_endUrl crawler then
+                -- If this is the target page, it should have an infinity score.
+                return infinity
+            else if btc_endUrl crawler `elem` map l_url links then
                 -- If the target page contains a link to the end URL,
                 -- it should have an infinity score.
                 return infinity

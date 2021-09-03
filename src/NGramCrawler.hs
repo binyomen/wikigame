@@ -141,7 +141,7 @@ getPageData crawler link = do
             let scraper = do
                     title <- scrapeTitle
                     links <- scrapeLinks
-                    score <- scrapeScore crawler links
+                    score <- scrapeScore crawler url links
                     title `seq` links `seq` score `seq` return (title, links, score)
             (title, links, score) <- scrapeURL (fullUrl url) scraper >>= convertMaybe url
 
@@ -241,14 +241,17 @@ scoreLinkText crawler Link{l_text = linkText, l_url = url}
         numWordsInLinkText = fromIntegral $ length $ T.words strippedLinkText
         indexedModel = ngc_indexedModels crawler !! fromIntegral (numWordsInLinkText - 1)
 
--- Score the contents of the link.
-scrapeScore :: NGramCrawler -> [Link] -> Scraper Text Double
-scrapeScore crawler links =
+-- Score the contents of the list of links from the given URL.
+scrapeScore :: NGramCrawler -> URL -> [Link] -> Scraper Text Double
+scrapeScore crawler url links =
     scraper
     where
         model = ngc_endUrlModel crawler
         scraper = do
-            if ngc_endUrl crawler `elem` map l_url links then
+            if url == ngc_endUrl crawler then
+                -- If this is the target page, it should have an infinity score.
+                return infinity
+            else if ngc_endUrl crawler `elem` map l_url links then
                 -- If the target page contains a link to the end URL,
                 -- it should have an infinity score.
                 return infinity
