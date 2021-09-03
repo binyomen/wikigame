@@ -33,7 +33,7 @@ maxIndexedModels = 10
 
 -- The number of pages to look ahead by when determining the best next link.
 lookahead :: Word
-lookahead = 2
+lookahead = 1
 
 infinity :: Double
 infinity = 1 / 0
